@@ -31,7 +31,7 @@ module Distribution.Simple.Build (
 import Prelude ()
 import Distribution.Compat.Prelude
 
-import Distribution.Types.Dependency
+import Distribution.Types.LibDependency
 import Distribution.Types.LocalBuildInfo
 import Distribution.Types.TargetInfo
 import Distribution.Types.ComponentRequestedSpec
@@ -77,6 +77,7 @@ import Distribution.Simple.Utils
 import Distribution.System
 import Distribution.Text
 import Distribution.Verbosity
+import Distribution.Version (thisVersion)
 
 import Distribution.Compat.Graph (IsNode(..))
 
@@ -465,6 +466,8 @@ testSuiteLibV09AsLibAndExe pkg_descr
     PackageIdentifier pkg_name pkg_ver = package pkg_descr
     compat_name = computeCompatPackageName pkg_name (Just (testName test))
     compat_key = computeCompatPackageKey (compiler lbi) compat_name pkg_ver (componentUnitId clbi)
+    -- Ew
+    compat_pkg_name = mkPackageName $ unMungedPackageName compat_name
     libClbi = LibComponentLocalBuildInfo
                 { componentPackageDeps = componentPackageDeps clbi
                 , componentInternalDeps = componentInternalDeps clbi
@@ -481,7 +484,7 @@ testSuiteLibV09AsLibAndExe pkg_descr
                 , componentExposedModules = [IPI.ExposedModule m Nothing]
                 }
     pkg = pkg_descr {
-            package      = (package pkg_descr) { pkgName = mkPackageName $ unMungedPackageName compat_name }
+            package      = (package pkg_descr) { pkgName = compat_pkg_name }
           , executables  = []
           , testSuites   = []
           , subLibraries = [lib]
@@ -489,7 +492,8 @@ testSuiteLibV09AsLibAndExe pkg_descr
     ipi    = inplaceInstalledPackageInfo pwd distPref pkg (mkAbiHash "") lib lbi libClbi
     testDir = buildDir lbi </> stubName test
           </> stubName test ++ "-tmp"
-    testLibDep = thisPackageVersion $ package pkg
+    testLibDep = LibDependency compat_pkg_name Nothing
+      $ thisVersion $ pkgVersion $ package pkg
     exe = Executable {
             exeName    = mkUnqualComponentName $ stubName test,
             modulePath = stubFilePath test,
