@@ -26,6 +26,9 @@ branches:
 # TAGSUFFIX to help travis/upload.sh disambiguate the matrix entry.
 matrix:
   include:
+   - env: GHCVER=8.2.1 SCRIPT=script CABAL_INSTALL_ONLY=YES
+     os: linux
+     sudo: required
    - env: GHCVER=8.0.2 SCRIPT=meta BUILDER=none
      os: linux
      sudo: required
@@ -133,6 +136,17 @@ cache:
  - $HOME/.stack/programs
  - $HOME/.stack/setup-exe-cache
  - $HOME/.stack/snapshots
+
+ - dist-newstyle
+   # - dist-newstyle/build/Cabal*
+   # - dist-newstyle/build/hackage-security*
+   # - dist-newstyle/build/*/ghc-*/Cabal-*
+   # - dist-newstyle/build/*/ghc-*/hackage-security-*
+   # - dist-newstyle/cache
+   # - dist-newstyle/src
+   # - dist-newstyle/tmp
+   # - dist-newstyle/packagedb/ghc-*/Cabal-*
+   # - dist-newstyle/packagedb/ghc-*/hackage-security-*
 
 # We remove the index because it churns quite a bit and we don't want
 # to pay the cost of repeatedly caching it even though we don't care
