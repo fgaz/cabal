@@ -869,15 +869,6 @@ testTargetProblemsRun config reportSubCase = do
       [ ( CmdRun.TargetProblemNoTargets, mkTargetPackage "p-0.1" )
       ]
 
-    reportSubCase "test-only"
-    assertProjectTargetProblems
-      "targets/test-only" config
-      CmdRun.selectPackageTargets
-      CmdRun.selectComponentTarget
-      CmdRun.TargetProblemCommon
-      [ ( CmdRun.TargetProblemNoExes, mkTargetPackage "p-0.1" )
-      ]
-
     reportSubCase "variety"
     assertProjectTargetProblems
       "targets/variety" config
