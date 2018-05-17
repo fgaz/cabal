@@ -25,6 +25,7 @@ data Library = Library
     , reexportedModules :: [ModuleReexport]
     , signatures        :: [ModuleName]   -- ^ What sigs need implementations?
     , libExposed        :: Bool           -- ^ Is the lib to be exposed by default?
+    , libPublic         :: Bool           -- ^ Is the lib public by default?
     , libBuildInfo      :: BuildInfo
     }
     deriving (Generic, Show, Eq, Read, Typeable, Data)
@@ -43,6 +44,7 @@ instance Monoid Library where
     reexportedModules = mempty,
     signatures = mempty,
     libExposed     = True,
+    libPublic     = False,
     libBuildInfo   = mempty
   }
   mappend = (<>)
@@ -54,6 +56,7 @@ instance Semigroup Library where
     reexportedModules = combine reexportedModules,
     signatures = combine signatures,
     libExposed     = libExposed a && libExposed b, -- so False propagates
+    libPublic      = libPublic a || libPublic b, -- so True propagates
     libBuildInfo   = combine libBuildInfo
   }
     where combine field = field a `mappend` field b

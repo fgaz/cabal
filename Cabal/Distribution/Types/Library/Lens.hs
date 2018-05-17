@@ -35,6 +35,10 @@ libExposed :: Lens' Library Bool
 libExposed f s = fmap (\x -> s { T.libExposed = x }) (f (T.libExposed s))
 {-# INLINE libExposed #-}
 
+libPublic :: Lens' Library Bool
+libPublic f s = fmap (\x -> s { T.libPublic = x }) (f (T.libPublic s))
+{-# INLINE libPublic #-}
+
 libBuildInfo :: Lens' Library BuildInfo
 libBuildInfo f s = fmap (\x -> s { T.libBuildInfo = x }) (f (T.libBuildInfo s))
 {-# INLINE libBuildInfo #-}

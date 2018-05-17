@@ -128,6 +128,7 @@ libraryFieldGrammar n = Library n
     <*> monoidalFieldAla  "signatures"         (alaList' VCat MQuoted) L.signatures
         ^^^ availableSince [2,0] []
     <*> booleanFieldDef   "exposed"                                    L.libExposed True
+    <*> booleanFieldDef   "public"                                     L.libPublic  False
     <*> blurFieldGrammar L.libBuildInfo buildInfoFieldGrammar
 {-# SPECIALIZE libraryFieldGrammar :: Maybe UnqualComponentName -> ParsecFieldGrammar' Library #-}
 {-# SPECIALIZE libraryFieldGrammar :: Maybe UnqualComponentName -> PrettyFieldGrammar' Library #-}

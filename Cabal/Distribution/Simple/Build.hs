@@ -456,6 +456,7 @@ testSuiteLibV09AsLibAndExe pkg_descr
             reexportedModules = [],
             signatures = [],
             libExposed     = True,
+            libPublic      = True,
             libBuildInfo   = bi
           }
     -- This is, like, the one place where we use a CTestName for a library.
