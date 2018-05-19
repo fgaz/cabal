@@ -63,6 +63,8 @@ import Distribution.Types.CondTree
 import Distribution.Types.Condition
 import Distribution.Types.DependencyMap
 
+import Data.Set ( Set )
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Tree ( Tree(Node) )
 
@@ -228,7 +230,7 @@ resolveWithFlags dom enabled os arch impl constrs trees checkDeps =
     mp (Left xs)   (Left ys)   =
         let union = Map.foldrWithKey (Map.insertWith' combine)
                     (unDepMapUnion xs) (unDepMapUnion ys)
-            combine x y = simplifyVersionRange $ unionVersionRanges x y
+            combine x y = (\(vr, cs) -> (simplifyVersionRange vr,cs)) $ unionVersionRangesAndIntersectionComponents x y
         in union `seq` Left (DepMapUnion union)
 
     -- `mzero'
@@ -306,14 +308,22 @@ extractConditions f gpkg =
 
 
 -- | A map of dependencies that combines version ranges using 'unionVersionRanges'.
-newtype DepMapUnion = DepMapUnion { unDepMapUnion :: Map PackageName VersionRange }
+newtype DepMapUnion = DepMapUnion { unDepMapUnion :: Map PackageName (VersionRange, Set UnqualComponentName) }
+
+-- TODO is this right? an union of versions should correspond to an intersection
+-- of the components, but I'll have to check how this module actually works
+unionVersionRangesAndIntersectionComponents :: (VersionRange, Set UnqualComponentName)
+                                            -> (VersionRange, Set UnqualComponentName)
+                                            -> (VersionRange, Set UnqualComponentName)
+unionVersionRangesAndIntersectionComponents (vra, csa) (vrb, csb) =
+  (unionVersionRanges vra vrb, Set.intersection csa csb)
 
 toDepMapUnion :: [Dependency] -> DepMapUnion
 toDepMapUnion ds =
-  DepMapUnion $ Map.fromListWith unionVersionRanges [ (p,vr) | Dependency p vr <- ds ]
+  DepMapUnion $ Map.fromListWith unionVersionRangesAndIntersectionComponents [ (p,(vr,cs)) | Dependency p vr cs <- ds ]
 
 fromDepMapUnion :: DepMapUnion -> [Dependency]
-fromDepMapUnion m = [ Dependency p vr | (p,vr) <- Map.toList (unDepMapUnion m) ]
+fromDepMapUnion m = [ Dependency p vr cs | (p,(vr,cs)) <- Map.toList (unDepMapUnion m) ]
 
 freeVars :: CondTree ConfVar c a  -> [FlagName]
 freeVars t = [ f | Flag f <- freeVars' t ]

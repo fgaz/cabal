@@ -584,7 +584,7 @@ checkFields pkg =
              , name `elem` map display knownLanguages ]
 
     testedWithImpossibleRanges =
-      [ Dependency (mkPackageName (display compiler)) vr
+      [ Dependency (mkPackageName (display compiler)) vr Set.empty
       | (compiler, vr) <- testedWith pkg
       , isNoVersion vr ]
 
@@ -597,7 +597,7 @@ checkFields pkg =
     internalLibDeps =
       [ dep
       | bi <- allBuildInfo pkg
-      , dep@(Dependency name _) <- targetBuildDepends bi
+      , dep@(Dependency name _ _) <- targetBuildDepends bi
       , name `elem` internalLibraries
       ]
 
@@ -610,14 +610,14 @@ checkFields pkg =
 
     depInternalLibraryWithExtraVersion =
       [ dep
-      | dep@(Dependency _ versionRange) <- internalLibDeps
+      | dep@(Dependency _ versionRange _) <- internalLibDeps
       , not $ isAnyVersion versionRange
       , packageVersion pkg `withinRange` versionRange
       ]
 
     depInternalLibraryWithImpossibleVersion =
       [ dep
-      | dep@(Dependency _ versionRange) <- internalLibDeps
+      | dep@(Dependency _ versionRange _) <- internalLibDeps
       , not $ packageVersion pkg `withinRange` versionRange
       ]
 
@@ -1242,8 +1242,8 @@ checkCabalVersion pkg =
         ++ ". To use this new syntax the package need to specify at least "
         ++ "'cabal-version: >= 1.6'. Alternatively, if broader compatibility "
         ++ "is important then use: " ++ commaSep
-           [ display (Dependency name (eliminateWildcardSyntax versionRange))
-           | Dependency name versionRange <- depsUsingWildcardSyntax ]
+           [ display (Dependency name (eliminateWildcardSyntax versionRange) Set.empty)
+           | Dependency name versionRange _ <- depsUsingWildcardSyntax ]
 
     -- check use of "build-depends: foo ^>= 1.2.3" syntax
   , checkVersion [2,0] (not (null depsUsingMajorBoundSyntax)) $
@@ -1254,8 +1254,8 @@ checkCabalVersion pkg =
         ++ ". To use this new syntax the package need to specify at least "
         ++ "'cabal-version: 2.0'. Alternatively, if broader compatibility "
         ++ "is important then use: " ++ commaSep
-           [ display (Dependency name (eliminateMajorBoundSyntax versionRange))
-           | Dependency name versionRange <- depsUsingMajorBoundSyntax ]
+           [ display (Dependency name (eliminateMajorBoundSyntax versionRange) Set.empty)
+           | Dependency name versionRange _ <- depsUsingMajorBoundSyntax ]
 
   , checkVersion [2,1] (any (not . null)
                         (concatMap buildInfoField
@@ -1291,8 +1291,8 @@ checkCabalVersion pkg =
         ++ ". To use this new syntax the package need to specify at least "
         ++ "'cabal-version: >= 1.6'. Alternatively, if broader compatibility "
         ++ "is important then use: " ++ commaSep
-           [ display (Dependency name (eliminateWildcardSyntax versionRange))
-           | Dependency name versionRange <- testedWithUsingWildcardSyntax ]
+           [ display (Dependency name (eliminateWildcardSyntax versionRange) Set.empty)
+           | Dependency name versionRange _ <- testedWithUsingWildcardSyntax ]
 
     -- check use of "source-repository" section
   , checkVersion [1,6] (not (null (sourceRepos pkg))) $
@@ -1366,11 +1366,11 @@ checkCabalVersion pkg =
     buildInfoField field         = map field (allBuildInfo pkg)
 
     versionRangeExpressions =
-        [ dep | dep@(Dependency _ vr) <- allBuildDepends pkg
+        [ dep | dep@(Dependency _ vr _) <- allBuildDepends pkg
               , usesNewVersionRangeSyntax vr ]
 
     testedWithVersionRangeExpressions =
-        [ Dependency (mkPackageName (display compiler)) vr
+        [ Dependency (mkPackageName (display compiler)) vr Set.empty
         | (compiler, vr) <- testedWith pkg
         , usesNewVersionRangeSyntax vr ]
 
@@ -1394,16 +1394,16 @@ checkCabalVersion pkg =
         alg (VersionRangeParensF _) = 3
         alg _ = 1 :: Int
 
-    depsUsingWildcardSyntax = [ dep | dep@(Dependency _ vr) <- allBuildDepends pkg
+    depsUsingWildcardSyntax = [ dep | dep@(Dependency _ vr _) <- allBuildDepends pkg
                                     , usesWildcardSyntax vr ]
 
-    depsUsingMajorBoundSyntax = [ dep | dep@(Dependency _ vr) <- allBuildDepends pkg
+    depsUsingMajorBoundSyntax = [ dep | dep@(Dependency _ vr _) <- allBuildDepends pkg
                                       , usesMajorBoundSyntax vr ]
 
     usesBackpackIncludes = any (not . null . mixins) (allBuildInfo pkg)
 
     testedWithUsingWildcardSyntax =
-      [ Dependency (mkPackageName (display compiler)) vr
+      [ Dependency (mkPackageName (display compiler)) vr Set.empty
       | (compiler, vr) <- testedWith pkg
       , usesWildcardSyntax vr ]
 
@@ -1492,8 +1492,8 @@ checkCabalVersion pkg =
     allModuleNamesAutogen = concatMap autogenModules (allBuildInfo pkg)
 
 displayRawDependency :: Dependency -> String
-displayRawDependency (Dependency pkg vr) =
-  display pkg ++ " " ++ display vr
+displayRawDependency (Dependency pkg vr cs) =
+  display pkg ++ " " ++ display vr ++ " " ++ (unwords . fmap display . Set.toList $ cs) --MAYBE maybe drop cs entirely
 
 
 -- ------------------------------------------------------------
@@ -1544,7 +1544,7 @@ checkPackageVersions pkg =
           foldr intersectVersionRanges anyVersion baseDeps
         where
           baseDeps =
-            [ vr | Dependency pname vr <- allBuildDepends pkg'
+            [ vr | Dependency pname vr _ <- allBuildDepends pkg'
                  , pname == mkPackageName "base" ]
 
       -- Just in case finalizePD fails for any reason,
