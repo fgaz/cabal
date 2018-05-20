@@ -28,7 +28,6 @@ import Distribution.Types.UnqualComponentName
 import Distribution.Version
 
 import Data.Set (Set)
-import qualified Data.Set as Set
 #ifdef MIN_VERSION_containers_0_5_0
 import qualified Data.Map.Lazy as Map
 #else
