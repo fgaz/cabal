@@ -219,6 +219,7 @@ data PackagePreference =
      -- | If we would prefer to enable these optional stanzas
      -- (i.e. test suites and/or benchmarks)
    | PackageStanzasPreference   PackageName [OptionalStanza]
+   --TODO sublibrary preference
 
 
 -- | Provide a textual representation of a package preference
@@ -459,8 +460,8 @@ relaxPackageDeps _ rd gpd | not (isRelaxDeps rd) = gpd -- subsumed by no-op case
 relaxPackageDeps relKind RelaxDepsAll  gpd = PD.transformAllBuildDepends relaxAll gpd
   where
     relaxAll :: Dependency -> Dependency
-    relaxAll (Dependency pkgName verRange) =
-        Dependency pkgName (removeBound relKind RelaxDepModNone verRange)
+    relaxAll (Dependency pkgName verRange cs) =
+        Dependency pkgName (removeBound relKind RelaxDepModNone verRange) cs
 
 relaxPackageDeps relKind (RelaxDepsSome depsToRelax0) gpd =
   PD.transformAllBuildDepends relaxSome gpd
@@ -480,13 +481,13 @@ relaxPackageDeps relKind (RelaxDepsSome depsToRelax0) gpd =
           | otherwise         -> Nothing
 
     relaxSome :: Dependency -> Dependency
-    relaxSome d@(Dependency depName verRange)
+    relaxSome d@(Dependency depName verRange cs)
         | Just relMod <- Map.lookup RelaxDepSubjectAll depsToRelax =
             -- a '*'-subject acts absorbing, for consistency with
             -- the 'Semigroup RelaxDeps' instance
-            Dependency depName (removeBound relKind relMod verRange)
+            Dependency depName (removeBound relKind relMod verRange) cs
         | Just relMod <- Map.lookup (RelaxDepSubjectPkg depName) depsToRelax =
-            Dependency depName (removeBound relKind relMod verRange)
+            Dependency depName (removeBound relKind relMod verRange) cs
         | otherwise = d -- no-op
 
 -- | Internal helper for 'relaxPackageDeps'
@@ -632,7 +633,7 @@ standardInstallPolicy installedPkgIndex sourcePkgDb pkgSpecifiers
       mkDefaultSetupDeps :: UnresolvedSourcePackage -> Maybe [Dependency]
       mkDefaultSetupDeps srcpkg | affected        =
         Just [Dependency (mkPackageName "Cabal")
-              (orLaterVersion $ mkVersion [1,24])]
+              (orLaterVersion $ mkVersion [1,24]) mempty]
                                 | otherwise       = Nothing
         where
           gpkgdesc = packageDescription srcpkg
@@ -929,10 +930,11 @@ configuredPackageProblems platform cinfo
 
     packageSatisfiesDependency
       (PackageIdentifier name  version)
-      (Dependency        name' versionRange) = assert (name == name') $
+      (Dependency        name' versionRange _) = assert (name == name') $
         version `withinRange` versionRange
+        --TODO add sublib check too
 
-    dependencyName (Dependency name _) = name
+    dependencyName (Dependency name _ _) = name
 
     mergedDeps :: [MergeResult Dependency PackageId]
     mergedDeps = mergeDeps requiredDeps (CD.flatDeps specifiedDeps)
@@ -1004,7 +1006,7 @@ resolveWithoutDependencies (DepResolverParams targets constraints
       where
         -- Constraints
         requiredVersions = packageConstraints pkgname
-        pkgDependency    = Dependency pkgname requiredVersions
+        pkgDependency    = Dependency pkgname requiredVersions mempty
         choices          = PackageIndex.lookupDependency sourcePkgIndex
                                                          pkgDependency
 
