@@ -911,8 +911,8 @@ readSourcePackage verbosity (ProjectPackageLocalDirectory dir cabalFile) = do
       packageDescrOverride = Nothing
     }
 
-readSourcePackage _ (ProjectPackageNamed (Dependency pkgname verrange)) =
-    return $ NamedPackage pkgname [PackagePropertyVersion verrange]
+readSourcePackage _ (ProjectPackageNamed (Dependency pkgname verrange _)) =
+    return $ NamedPackage pkgname [PackagePropertyVersion verrange] --TODO sublib property
 
 readSourcePackage _verbosity _ =
     fail $ "TODO: add support for fetching and reading local tarballs, remote "
