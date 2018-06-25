@@ -638,7 +638,7 @@ configureOptions showOrParseArgs =
          "A list of additional constraints on the dependencies."
          configConstraints (\v flags -> flags { configConstraints = v})
          (reqArg "DEPENDENCY"
-                 (parsecToReadE (const "dependency expected") ((\x -> [x]) `fmap` parsec))
+                 (parsecToReadE (const "dependency expected") (parsingDependencyToDependencies <$> parsec))
                  (map display))
 
       ,option "" ["dependency"]
