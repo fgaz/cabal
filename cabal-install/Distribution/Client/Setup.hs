@@ -111,6 +111,8 @@ import Distribution.Version
 import Distribution.Package
          ( PackageIdentifier, PackageName, packageName, packageVersion )
 import Distribution.Types.Dependency
+import Distribution.Types.GivenComponent
+         ( GivenComponent(..) )
 import Distribution.PackageDescription
          ( BuildType(..), RepoKind(..), ComponentName(..) )
 import Distribution.System ( Platform )
@@ -491,7 +493,7 @@ filterConfigureFlags flags cabalLibVersion
       configDependencies =
         let isMainLib CLibName = True
             isMainLib _        = False
-        in filter (\(_, c, _) -> isMainLib c) $ configDependencies flags
+        in filter (\(GivenComponent _ c _) -> isMainLib c) $ configDependencies flags
       }
 
     flags_2_3_0 = flags_latest {
