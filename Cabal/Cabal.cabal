@@ -327,6 +327,7 @@ library
     Distribution.Types.Dependency
     Distribution.Types.ExeDependency
     Distribution.Types.LegacyExeDependency
+    Distribution.Types.LibraryDependency
     Distribution.Types.PkgconfigDependency
     Distribution.Types.DependencyMap
     Distribution.Types.ComponentId

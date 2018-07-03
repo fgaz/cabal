@@ -23,6 +23,7 @@ import Distribution.Types.Mixin
 import Distribution.Types.Dependency
 import Distribution.Types.ExeDependency
 import Distribution.Types.LegacyExeDependency
+import Distribution.Types.LibraryDependency
 import Distribution.Types.PkgconfigDependency
 
 import Distribution.ModuleName
@@ -99,7 +100,7 @@ data BuildInfo = BuildInfo {
         customFieldsBI    :: [(String,String)], -- ^Custom fields starting
                                                 -- with x-, stored in a
                                                 -- simple assoc-list.
-        targetBuildDepends :: [Dependency], -- ^ Dependencies specific to a library or executable target
+        targetBuildDepends :: [LibraryDependency], -- ^ Dependencies specific to a library or executable target
         mixins :: [Mixin]
     }
     deriving (Generic, Show, Read, Eq, Typeable, Data)

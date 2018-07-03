@@ -28,9 +28,10 @@ data ComponentName = CLibName
                    | CExeName   UnqualComponentName
                    | CTestName  UnqualComponentName
                    | CBenchName UnqualComponentName
-                   deriving (Eq, Generic, Ord, Read, Show, Typeable)
+                   deriving (Eq, Generic, Ord, Read, Show, Typeable, Data)
 
 instance Binary ComponentName
+instance NFData ComponentName where rnf = genericRnf
 
 -- Build-target-ish syntax
 instance Pretty ComponentName where
