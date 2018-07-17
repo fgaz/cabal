@@ -142,10 +142,12 @@ import Distribution.Package
          , Package(..), HasMungedPackageId(..), HasUnitId(..)
          , UnitId )
 import Distribution.Types.Dependency
-         ( Dependency(..), thisPackageVersion )
+         ( Dependency(..) )
 import Distribution.Types.GivenComponent
          ( GivenComponent(..) )
 import Distribution.Types.MungedPackageId
+import Distribution.Types.PackageVersionConstraint
+         ( thisPackageVersion )
 import qualified Distribution.PackageDescription as PackageDescription
 import Distribution.PackageDescription
          ( PackageDescription, GenericPackageDescription(..), Flag(..)

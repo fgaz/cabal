@@ -58,10 +58,11 @@ import Distribution.Types.ForeignLib
 import Distribution.Types.Component
 import Distribution.Types.Dependency
 import Distribution.Types.PackageName
+import Distribution.Types.PackageVersionConstraint
 import Distribution.Types.UnqualComponentName
 import Distribution.Types.CondTree
 import Distribution.Types.Condition
-import Distribution.Types.DependencyMap
+import Distribution.Types.PkgVerConstraintMap
 
 import qualified Distribution.Compat.Map.Strict as Map.Strict
 import qualified Distribution.Compat.Map.Lazy as Map
@@ -175,21 +176,21 @@ resolveWithFlags ::
   -> OS      -- ^ OS as returned by Distribution.System.buildOS
   -> Arch    -- ^ Arch as returned by Distribution.System.buildArch
   -> CompilerInfo  -- ^ Compiler information
-  -> [Dependency]  -- ^ Additional constraints
-  -> [CondTree ConfVar [Dependency] PDTagged]
-  -> ([Dependency] -> DepTestRslt [Dependency])  -- ^ Dependency test function.
-  -> Either [Dependency] (TargetSet PDTagged, FlagAssignment)
+  -> [PackageVersionConstraint]  -- ^ Additional constraints
+  -> [CondTree ConfVar [PackageVersionConstraint] PDTagged]
+  -> ([PackageVersionConstraint] -> DepTestRslt [PackageVersionConstraint])  -- ^ Dependency test function.
+  -> Either [PackageVersionConstraint] (TargetSet PDTagged, FlagAssignment)
        -- ^ Either the missing dependencies (error case), or a pair of
        -- (set of build targets with dependencies, chosen flag assignments)
 resolveWithFlags dom enabled os arch impl constrs trees checkDeps =
-    either (Left . fromDepMapUnion) Right $ explore (build mempty dom)
+    either (Left . fromPkgVerConstraintMapUnion) Right $ explore (build mempty dom)
   where
-    extraConstrs = toDepMap constrs
+    extraConstrs = toPkgVerConstraintMap constrs
 
     -- simplify trees by (partially) evaluating all conditions and converting
     -- dependencies to dependency maps.
-    simplifiedTrees :: [CondTree FlagName DependencyMap PDTagged]
-    simplifiedTrees = map ( mapTreeConstrs toDepMap  -- convert to maps
+    simplifiedTrees :: [CondTree FlagName PkgVerConstraintMap PDTagged]
+    simplifiedTrees = map ( mapTreeConstrs toPkgVerConstraintMap  -- convert to maps
                           . addBuildableConditionPDTagged
                           . mapTreeConds (fst . simplifyWithSysParams os arch impl))
                           trees
@@ -200,17 +201,17 @@ resolveWithFlags dom enabled os arch impl constrs trees checkDeps =
     -- it to backtrack.  Since the tree is constructed lazily, we avoid some
     -- computation overhead in the successful case.
     explore :: Tree FlagAssignment
-            -> Either DepMapUnion (TargetSet PDTagged, FlagAssignment)
+            -> Either PkgVerConstraintMapUnion (TargetSet PDTagged, FlagAssignment)
     explore (Node flags ts) =
         let targetSet = TargetSet $ flip map simplifiedTrees $
                 -- apply additional constraints to all dependencies
                 first (`constrainBy` extraConstrs) .
                 simplifyCondTree (env flags)
             deps = overallDependencies enabled targetSet
-        in case checkDeps (fromDepMap deps) of
+        in case checkDeps (fromPkgVerConstraintMap deps) of
              DepOk | null ts   -> Right (targetSet, flags)
                    | otherwise -> tryAll $ map explore ts
-             MissingDeps mds   -> Left (toDepMapUnion mds)
+             MissingDeps mds   -> Left (toPkgVerConstraintMapUnion mds)
 
     -- Builds a tree of all possible flag assignments.  Internal nodes
     -- have only partial assignments.
@@ -219,22 +220,22 @@ resolveWithFlags dom enabled os arch impl constrs trees checkDeps =
     build assigned ((fn, vals) : unassigned) =
         Node assigned $ map (\v -> build (insertFlagAssignment fn v assigned) unassigned) vals
 
-    tryAll :: [Either DepMapUnion a] -> Either DepMapUnion a
+    tryAll :: [Either PkgVerConstraintMapUnion a] -> Either PkgVerConstraintMapUnion a
     tryAll = foldr mp mz
 
     -- special version of `mplus' for our local purposes
-    mp :: Either DepMapUnion a -> Either DepMapUnion a -> Either DepMapUnion a
+    mp :: Either PkgVerConstraintMapUnion a -> Either PkgVerConstraintMapUnion a -> Either PkgVerConstraintMapUnion a
     mp m@(Right _) _           = m
     mp _           m@(Right _) = m
     mp (Left xs)   (Left ys)   =
         let union = Map.foldrWithKey (Map.Strict.insertWith combine)
-                    (unDepMapUnion xs) (unDepMapUnion ys)
+                    (unPkgVerConstraintMapUnion xs) (unPkgVerConstraintMapUnion ys)
             combine x y = simplifyVersionRange $ unionVersionRanges x y
-        in union `seq` Left (DepMapUnion union)
+        in union `seq` Left (PkgVerConstraintMapUnion union)
 
     -- `mzero'
-    mz :: Either DepMapUnion a
-    mz = Left (DepMapUnion Map.empty)
+    mz :: Either PkgVerConstraintMapUnion a
+    mz = Left (PkgVerConstraintMapUnion Map.empty)
 
     env :: FlagAssignment -> FlagName -> Either FlagName Bool
     env flags flag = (maybe (Left flag) Right . lookupFlagAssignment flag) flags
@@ -307,14 +308,14 @@ extractConditions f gpkg =
 
 
 -- | A map of dependencies that combines version ranges using 'unionVersionRanges'.
-newtype DepMapUnion = DepMapUnion { unDepMapUnion :: Map PackageName VersionRange }
+newtype PkgVerConstraintMapUnion = PkgVerConstraintMapUnion { unPkgVerConstraintMapUnion :: Map PackageName VersionRange }
 
-toDepMapUnion :: [Dependency] -> DepMapUnion
-toDepMapUnion ds =
-  DepMapUnion $ Map.fromListWith unionVersionRanges [ (p,vr) | Dependency p vr <- ds ]
+toPkgVerConstraintMapUnion :: [PackageVersionConstraint] -> PkgVerConstraintMapUnion
+toPkgVerConstraintMapUnion ds =
+  PkgVerConstraintMapUnion $ Map.fromListWith unionVersionRanges [ (p,vr) | PackageVersionConstraint p vr <- ds ]
 
-fromDepMapUnion :: DepMapUnion -> [Dependency]
-fromDepMapUnion m = [ Dependency p vr | (p,vr) <- Map.toList (unDepMapUnion m) ]
+fromPkgVerConstraintMapUnion :: PkgVerConstraintMapUnion -> [PackageVersionConstraint]
+fromPkgVerConstraintMapUnion m = [ PackageVersionConstraint p vr | (p,vr) <- Map.toList (unPkgVerConstraintMapUnion m) ]
 
 freeVars :: CondTree ConfVar c a  -> [FlagName]
 freeVars t = [ f | Flag f <- freeVars' t ]
@@ -332,11 +333,11 @@ freeVars t = [ f | Flag f <- freeVars' t ]
 ------------------------------------------------------------------------------
 
 -- | A set of targets with their package dependencies
-newtype TargetSet a = TargetSet [(DependencyMap, a)]
+newtype TargetSet a = TargetSet [(PkgVerConstraintMap, a)]
 
 -- | Combine the target-specific dependencies in a TargetSet to give the
 -- dependencies for the package as a whole.
-overallDependencies :: ComponentRequestedSpec -> TargetSet PDTagged -> DependencyMap
+overallDependencies :: ComponentRequestedSpec -> TargetSet PDTagged -> PkgVerConstraintMap
 overallDependencies enabled (TargetSet targets) = mconcat depss
   where
     (depss, _) = unzip $ filter (removeDisabledSections . snd) targets
@@ -370,7 +371,9 @@ flattenTaggedTargets (TargetSet targets) = foldr untag (Nothing, []) targets whe
     (PDNull, x) -> x  -- actually this should not happen, but let's be liberal
     where
       redoBD :: L.HasBuildInfo a => a -> a
-      redoBD = set L.targetBuildDepends $ fromDepMap depMap
+      redoBD = set L.targetBuildDepends
+             $ (\(PackageVersionConstraint a b) -> Dependency a b) -- XXX XXX XXX
+             <$> fromPkgVerConstraintMap depMap
 
 ------------------------------------------------------------------------------
 -- Convert GenericPackageDescription to PackageDescription
@@ -421,14 +424,14 @@ instance Semigroup PDTagged where
 finalizePD ::
      FlagAssignment  -- ^ Explicitly specified flag assignments
   -> ComponentRequestedSpec
-  -> (Dependency -> Bool) -- ^ Is a given dependency satisfiable from the set of
+  -> (PackageVersionConstraint -> Bool) -- ^ Is a given dependency satisfiable from the set of
                           -- available packages?  If this is unknown then use
                           -- True.
   -> Platform      -- ^ The 'Arch' and 'OS'
   -> CompilerInfo  -- ^ Compiler information
-  -> [Dependency]  -- ^ Additional constraints
+  -> [PackageVersionConstraint]  -- ^ Additional constraints
   -> GenericPackageDescription
-  -> Either [Dependency]
+  -> Either [PackageVersionConstraint]
             (PackageDescription, FlagAssignment)
              -- ^ Either missing dependencies or the resolved package
              -- description along with the flag assignments chosen.
@@ -459,7 +462,8 @@ finalizePD userflags enabled satisfyDep
          , flagVals )
   where
     -- Combine lib, exes, and tests into one list of @CondTree@s with tagged data
-    condTrees =    maybeToList (fmap (mapTreeData Lib) mb_lib0)
+    condTrees =    mapTreeConstrs (fmap depToPkgVerConstraint) <$>
+                   maybeToList (fmap (mapTreeData Lib) mb_lib0)
                 ++ map (\(name,tree) -> mapTreeData (SubComp name . CLib) tree) sub_libs0
                 ++ map (\(name,tree) -> mapTreeData (SubComp name . CFLib) tree) flibs0
                 ++ map (\(name,tree) -> mapTreeData (SubComp name . CExe) tree) exes0
@@ -481,14 +485,14 @@ finalizePD userflags enabled satisfyDep
 {-# DEPRECATED finalizePackageDescription "This function now always assumes tests and benchmarks are disabled; use finalizePD with ComponentRequestedSpec to specify something more specific. This symbol will be removed in Cabal-3.0 (est. Oct 2018)." #-}
 finalizePackageDescription ::
      FlagAssignment  -- ^ Explicitly specified flag assignments
-  -> (Dependency -> Bool) -- ^ Is a given dependency satisfiable from the set of
+  -> (PackageVersionConstraint -> Bool) -- ^ Is a given dependency satisfiable from the set of
                           -- available packages?  If this is unknown then use
                           -- True.
   -> Platform      -- ^ The 'Arch' and 'OS'
   -> CompilerInfo  -- ^ Compiler information
-  -> [Dependency]  -- ^ Additional constraints
+  -> [PackageVersionConstraint]  -- ^ Additional constraints
   -> GenericPackageDescription
-  -> Either [Dependency]
+  -> Either [PackageVersionConstraint]
             (PackageDescription, FlagAssignment)
 finalizePackageDescription flags = finalizePD flags defaultComponentRequestedSpec
 

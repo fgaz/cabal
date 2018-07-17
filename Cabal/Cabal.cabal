@@ -328,7 +328,7 @@ library
     Distribution.Types.ExeDependency
     Distribution.Types.LegacyExeDependency
     Distribution.Types.PkgconfigDependency
-    Distribution.Types.DependencyMap
+    Distribution.Types.PkgVerConstraintMap
     Distribution.Types.ComponentId
     Distribution.Types.MungedPackageId
     Distribution.Types.PackageId
@@ -368,6 +368,7 @@ library
     Distribution.Types.VersionRange
     Distribution.Types.VersionInterval
     Distribution.Types.GivenComponent
+    Distribution.Types.PackageVersionConstraint
     Distribution.Utils.Generic
     Distribution.Utils.NubList
     Distribution.Utils.ShortText

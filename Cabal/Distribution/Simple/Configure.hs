@@ -90,6 +90,7 @@ import Distribution.Types.ForeignLibType
 import Distribution.Types.ForeignLibOption
 import Distribution.Types.GivenComponent
 import Distribution.Types.Mixin
+import Distribution.Types.PackageVersionConstraint as PackageVersionConstraint
 import Distribution.Types.UnqualComponentName
 import Distribution.Simple.Utils
 import Distribution.System
@@ -421,7 +422,7 @@ configure (pkg_descr0, pbi) cfg = do
         die' verbosity $ "--enable-tests/--enable-benchmarks are incompatible with" ++
               " explicitly specifying a component to configure."
 
-    -- allConstraints:  The set of all 'Dependency's we have.  Used ONLY
+    -- allConstraints:  The set of all 'PackageVersionConstraint's we have.  Used ONLY
     --                  to 'configureFinalizedPackage'.
     -- requiredDepsMap: A map from 'PackageName' to the specifically
     --                  required 'InstalledPackageInfo', due to --dependency
@@ -434,7 +435,7 @@ configure (pkg_descr0, pbi) cfg = do
     -- NB: The fact that we bundle all the constraints together means
     -- that is not possible to configure a test-suite to use one
     -- version of a dependency, and the executable to use another.
-    (allConstraints  :: [Dependency],
+    (allConstraints  :: [PackageVersionConstraint],
      requiredDepsMap :: Map (PackageName, ComponentName) InstalledPackageInfo)
         <- either (die' verbosity) return $
               combinedConstraints (configConstraints cfg)
@@ -864,11 +865,11 @@ dependencySatisfiable
     -> InstalledPackageIndex -- ^ installed set
     -> Map PackageName (Maybe UnqualComponentName) -- ^ internal set
     -> Map (PackageName, ComponentName) InstalledPackageInfo -- ^ required dependencies
-    -> (Dependency -> Bool)
+    -> (PackageVersionConstraint -> Bool)
 dependencySatisfiable
   use_external_internal_deps
   exact_config pn installedPackageSet internalPackageSet requiredDepsMap
-  d@(Dependency depName vr)
+  constr@(PackageVersionConstraint depName vr)
 
     | exact_config
     -- When we're given '--exact-configuration', we assume that all
@@ -901,8 +902,9 @@ dependencySatisfiable
   where
     isInternalDep = Map.member depName internalPackageSet
 
-    depSatisfiable =
-        not . null $ PackageIndex.lookupDependency installedPackageSet d
+    depSatisfiable = --TODO TODO TODO
+        not . null $ PackageIndex.lookupDependency installedPackageSet
+                   $ Dependency depName vr
 
     internalDepSatisfiable =
         not . null $ PackageIndex.lookupInternalDependency
@@ -925,9 +927,9 @@ configureFinalizedPackage
     :: Verbosity
     -> ConfigFlags
     -> ComponentRequestedSpec
-    -> [Dependency]
-    -> (Dependency -> Bool) -- ^ tests if a dependency is satisfiable.
-                            -- Might say it's satisfiable even when not.
+    -> [PackageVersionConstraint]
+    -> (PackageVersionConstraint -> Bool) -- ^ tests if a dependency is satisfiable.
+                                          -- Might say it's satisfiable even when not.
     -> Compiler
     -> Platform
     -> GenericPackageDescription
@@ -948,7 +950,7 @@ configureFinalizedPackage verbosity cfg enabled
                Left missing ->
                    die' verbosity $ "Encountered missing dependencies:\n"
                      ++ (render . nest 4 . sep . punctuate comma
-                                . map (disp . simplifyDependency)
+                                . map (disp . simplifyPackageVersionConstraint)
                                 $ missing)
 
     -- add extra include/lib dirs as specified in cfg
@@ -1355,10 +1357,10 @@ interpretPackageDbFlags userInstall specificDBs =
 -- But after finalising we then have to make sure we pick the right specific
 -- deps in the end. So we still need to remember which installed packages to
 -- pick.
-combinedConstraints :: [Dependency] ->
+combinedConstraints :: [PackageVersionConstraint] ->
                        [GivenComponent] ->
                        InstalledPackageIndex ->
-                       Either String ([Dependency],
+                       Either String ([PackageVersionConstraint],
                                       Map (PackageName, ComponentName) InstalledPackageInfo)
 combinedConstraints constraints dependencies installedPackages = do
 
@@ -1372,9 +1374,9 @@ combinedConstraints constraints dependencies installedPackages = do
     return (allConstraints, idConstraintMap)
 
   where
-    allConstraints :: [Dependency]
+    allConstraints :: [PackageVersionConstraint]
     allConstraints = constraints
-                  ++ [ thisPackageVersion (packageId pkg)
+                  ++ [ PackageVersionConstraint.thisPackageVersion (packageId pkg)
                      | (_, _, _, Just pkg) <- dependenciesPkgInfo ]
 
     idConstraintMap :: Map (PackageName, ComponentName) InstalledPackageInfo

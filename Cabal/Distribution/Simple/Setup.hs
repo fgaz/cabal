@@ -105,6 +105,7 @@ import Distribution.Types.ComponentId
 import Distribution.Types.GivenComponent
 import Distribution.Types.Module
 import Distribution.Types.PackageName
+import Distribution.Types.PackageVersionConstraint
 import Distribution.Types.UnqualComponentName (unUnqualComponentName)
 
 import Distribution.Compat.Stack
@@ -256,8 +257,8 @@ data ConfigFlags = ConfigFlags {
     configSplitObjs :: Flag Bool,      -- ^Enable -split-objs with GHC
     configStripExes :: Flag Bool,      -- ^Enable executable stripping
     configStripLibs :: Flag Bool,      -- ^Enable library stripping
-    configConstraints :: [Dependency], -- ^Additional constraints for
-                                       -- dependencies.
+    configConstraints :: [PackageVersionConstraint], -- ^Additional constraints
+                                                     -- for dependencies.
     configDependencies :: [GivenComponent],
       -- ^The packages depended on.
     configInstantiateWith :: [(ModuleName, Module)],

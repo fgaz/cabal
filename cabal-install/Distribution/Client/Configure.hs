@@ -63,7 +63,9 @@ import Distribution.Simple.PackageIndex
 import Distribution.Package
          ( Package(..), packageName, PackageId )
 import Distribution.Types.Dependency
-         ( Dependency(..), thisPackageVersion )
+         ( Dependency(..) )
+import Distribution.Types.PackageVersionConstraint
+         ( thisPackageVersion )
 import Distribution.Types.GivenComponent
          ( GivenComponent(..) )
 import qualified Distribution.PackageDescription as PkgDesc

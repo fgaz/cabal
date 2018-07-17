@@ -5,8 +5,9 @@ module Distribution.Types.Dependency
   , depPkgName
   , depVerRange
   , thisPackageVersion
-  , notThisPackageVersion
+--  , notThisPackageVersion
   , simplifyDependency
+  , depToPkgVerConstraint
   ) where
 
 import Prelude ()
@@ -23,6 +24,7 @@ import Distribution.Pretty
 import Distribution.Parsec.Class
 import Distribution.Types.PackageId
 import Distribution.Types.PackageName
+import Distribution.Types.PackageVersionConstraint (PackageVersionConstraint(..))
 
 import Text.PrettyPrint ((<+>))
 
@@ -70,3 +72,7 @@ notThisPackageVersion (PackageIdentifier n v) =
 simplifyDependency :: Dependency -> Dependency
 simplifyDependency (Dependency name range) =
   Dependency name (simplifyVersionRange range)
+
+depToPkgVerConstraint :: Dependency -> PackageVersionConstraint
+depToPkgVerConstraint (Dependency pn vr) = PackageVersionConstraint pn vr
+
