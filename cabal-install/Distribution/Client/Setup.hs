@@ -110,10 +110,13 @@ import Distribution.Simple.InstallDirs
 import Distribution.Version
          ( Version, mkVersion, nullVersion, anyVersion, thisVersion )
 import Distribution.Package
-         ( PackageIdentifier, PackageName, packageName, packageVersion )
+         ( PackageIdentifier, PackageName, packageName, mkPackageName
+         , packageVersion )
 import Distribution.Types.Dependency
 import Distribution.Types.GivenComponent
          ( GivenComponent(..) )
+import Distribution.Types.UnqualComponentName
+         ( unUnqualComponentName )
 import Distribution.PackageDescription
          ( BuildType(..), RepoKind(..), ComponentName(..) )
 import Distribution.System ( Platform )
@@ -492,9 +495,15 @@ filterConfigureFlags flags cabalLibVersion
       -- Cabal < 2.3.0 does not understand --dependency=pkg:COMPONENT=cid
       --                                   (public sublibraries)
       configDependencies =
-        let isMainLib CLibName = True
-            isMainLib _        = False
-        in filter (\(GivenComponent _ c _) -> isMainLib c) $ configDependencies flags
+        let convertToLegacyInternalDep (GivenComponent _ (CSubLibName cn) cid) =
+              Just $ GivenComponent
+                       (mkPackageName $ unUnqualComponentName cn)
+                       CLibName
+                       cid
+            convertToLegacyInternalDep (GivenComponent pn CLibName cid) =
+              Just $ GivenComponent pn CLibName cid
+            convertToLegacyInternalDep _ = Nothing
+        in catMaybes $ convertToLegacyInternalDep <$> configDependencies flags
       }
 
     flags_2_3_0 = flags_latest {
