@@ -61,7 +61,7 @@ import Distribution.Solver.Types.SourcePackage
 import Distribution.ModuleName
          ( ModuleName, toFilePath )
 import Distribution.Simple.LocalBuildInfo
-         ( Component(..), ComponentName(..)
+         ( Component(..), ComponentName(..), LibraryName(..)
          , pkgComponents, componentName, componentBuildInfo )
 import Distribution.Types.ForeignLib
 
@@ -1154,7 +1154,7 @@ syntaxForm2PackageModule ps =
       KnownPackageName pn -> do
         m <- matchModuleNameUnknown str2
         -- We assume the primary library component of the package:
-        return (TargetComponentUnknown pn (Right CLibName) (ModuleTarget m))
+        return (TargetComponentUnknown pn (Right $ CLibName LMainLibName) (ModuleTarget m))
   where
     render (TargetComponent p _c (ModuleTarget m)) =
       [TargetStringFileStatus2 (dispP p) noFileStatus (dispM m)]
@@ -1199,7 +1199,7 @@ syntaxForm2PackageFile ps =
       KnownPackageName pn ->
         let filepath = str2 in
         -- We assume the primary library component of the package:
-        return (TargetComponentUnknown pn (Right CLibName) (FileTarget filepath))
+        return (TargetComponentUnknown pn (Right $ CLibName LMainLibName) (FileTarget filepath))
   where
     render (TargetComponent p _c (FileTarget f)) =
       [TargetStringFileStatus2 (dispP p) noFileStatus f]
@@ -1770,8 +1770,8 @@ collectKnownComponentInfo pkg =
 
 
 componentStringName :: PackageName -> ComponentName -> ComponentStringName
-componentStringName pkgname CLibName    = display pkgname
-componentStringName _ (CSubLibName name) = unUnqualComponentName name
+componentStringName pkgname (CLibName LMainLibName) = display pkgname
+componentStringName _ (CLibName (LSubLibName name)) = unUnqualComponentName name
 componentStringName _ (CFLibName name)  = unUnqualComponentName name
 componentStringName _ (CExeName   name) = unUnqualComponentName name
 componentStringName _ (CTestName  name) = unUnqualComponentName name
@@ -1830,8 +1830,7 @@ guardToken tokens msg s
 --
 
 componentKind :: ComponentName -> ComponentKind
-componentKind  CLibName      = LibKind
-componentKind (CSubLibName _) = LibKind
+componentKind (CLibName _)   = LibKind
 componentKind (CFLibName _)  = FLibKind
 componentKind (CExeName   _) = ExeKind
 componentKind (CTestName  _) = TestKind
@@ -2361,8 +2360,8 @@ mkComponentName pkgname ckind ucname =
   case ckind of
     LibKind
       | packageNameToUnqualComponentName pkgname == ucname
-                  -> CLibName
-      | otherwise -> CSubLibName ucname
+                  -> CLibName LMainLibName
+      | otherwise -> CLibName $ LSubLibName ucname
     FLibKind      -> CFLibName   ucname
     ExeKind       -> CExeName    ucname
     TestKind      -> CTestName   ucname
