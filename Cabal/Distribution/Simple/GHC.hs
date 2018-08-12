@@ -78,8 +78,8 @@ import Distribution.PackageDescription.Utils (cabalBug)
 import Distribution.PackageDescription as PD
 import Distribution.InstalledPackageInfo (InstalledPackageInfo)
 import qualified Distribution.InstalledPackageInfo as InstalledPackageInfo
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
-import qualified Distribution.Simple.PackageIndex as PackageIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Types.ComponentLocalBuildInfo
 import qualified Distribution.Simple.Hpc as Hpc
@@ -321,43 +321,43 @@ getGhcInfo verbosity ghcProg = Internal.getGhcInfo verbosity implInfo ghcProg
 
 -- | Given a single package DB, return all installed packages.
 getPackageDBContents :: Verbosity -> PackageDB -> ProgramDb
-                        -> IO InstalledPackageIndex
+                        -> IO InstalledLibraryIndex
 getPackageDBContents verbosity packagedb progdb = do
   pkgss <- getInstalledPackages' verbosity [packagedb] progdb
-  toPackageIndex verbosity pkgss progdb
+  toLibraryIndex verbosity pkgss progdb
 
 -- | Given a package DB stack, return all installed packages.
 getInstalledPackages :: Verbosity -> Compiler -> PackageDBStack
                      -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getInstalledPackages verbosity comp packagedbs progdb = do
   checkPackageDbEnvVar verbosity
   checkPackageDbStack verbosity comp packagedbs
   pkgss <- getInstalledPackages' verbosity packagedbs progdb
-  index <- toPackageIndex verbosity pkgss progdb
+  index <- toLibraryIndex verbosity pkgss progdb
   return $! hackRtsPackage index
 
   where
     hackRtsPackage index =
-      case PackageIndex.lookupPackageName index (mkPackageName "rts") of
+      case LibraryIndex.lookupPackageName index (mkPackageName "rts") of
         [(_,[rts])]
-           -> PackageIndex.insert (removeMingwIncludeDir rts) index
+           -> LibraryIndex.insert (removeMingwIncludeDir rts) index
         _  -> index -- No (or multiple) ghc rts package is registered!!
                     -- Feh, whatever, the ghc test suite does some crazy stuff.
 
 -- | Given a list of @(PackageDB, InstalledPackageInfo)@ pairs, produce a
--- @PackageIndex@. Helper function used by 'getPackageDBContents' and
+-- @LibraryIndex@. Helper function used by 'getPackageDBContents' and
 -- 'getInstalledPackages'.
-toPackageIndex :: Verbosity
+toLibraryIndex :: Verbosity
                -> [(PackageDB, [InstalledPackageInfo])]
                -> ProgramDb
-               -> IO InstalledPackageIndex
-toPackageIndex verbosity pkgss progdb = do
+               -> IO InstalledLibraryIndex
+toLibraryIndex verbosity pkgss progdb = do
   -- On Windows, various fields have $topdir/foo rather than full
   -- paths. We need to substitute the right value in so that when
   -- we, for example, call gcc, we have proper paths to give it.
   topDir <- getLibDir' verbosity ghcProg
-  let indices = [ PackageIndex.fromList (map (Internal.substTopDir topDir) pkgs)
+  let indices = [ LibraryIndex.fromList (map (Internal.substTopDir topDir) pkgs)
                 | (_, pkgs) <- pkgss ]
   return $! mconcat indices
 
@@ -1568,7 +1568,7 @@ data RtsInfo = RtsInfo {
 -- doesn't really help.
 extractRtsInfo :: LocalBuildInfo -> RtsInfo
 extractRtsInfo lbi =
-    case PackageIndex.lookupPackageName (installedPkgs lbi) (mkPackageName "rts") of
+    case LibraryIndex.lookupPackageName (installedLibs lbi) (mkPackageName "rts") of
       [(_, [rts])] -> aux rts
       _otherwise   -> error "No (or multiple) ghc rts package is registered"
   where

@@ -12,7 +12,7 @@ import Distribution.Solver.Types.Progress
 import Distribution.Solver.Types.ResolverPackage
 import Distribution.Solver.Types.SourcePackage
 
-import Distribution.Simple.PackageIndex ( InstalledPackageIndex )
+import Distribution.Simple.LibraryIndex ( InstalledLibraryIndex )
 import Distribution.Package ( PackageName )
 import Distribution.Compiler ( CompilerInfo )
 import Distribution.System ( Platform )
@@ -27,7 +27,7 @@ import Distribution.System ( Platform )
 --
 type DependencyResolver loc = Platform
                            -> CompilerInfo
-                           -> InstalledPackageIndex
+                           -> InstalledLibraryIndex
                            -> PackageIndex (SourcePackage loc)
                            -> PkgConfigDb
                            -> (PackageName -> PackagePreferences)

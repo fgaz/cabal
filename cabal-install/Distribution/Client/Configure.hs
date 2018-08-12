@@ -58,8 +58,8 @@ import Distribution.Client.SavedFlags ( readCommandFlags, writeCommandFlags )
 import Distribution.Simple.Setup
          ( ConfigFlags(..)
          , fromFlag, toFlag, flagToMaybe, fromFlagOrDefault )
-import Distribution.Simple.PackageIndex
-         ( InstalledPackageIndex, lookupPackageName )
+import Distribution.Simple.LibraryIndex
+         ( InstalledLibraryIndex, lookupPackageName )
 import Distribution.Package
          ( Package(..), packageName, PackageId )
 import Distribution.Types.Dependency
@@ -153,7 +153,7 @@ configure verbosity packageDBs repoCtxt comp platform progdb
               ++ "one local ready package."
 
   where
-    setupScriptOptions :: InstalledPackageIndex
+    setupScriptOptions :: InstalledLibraryIndex
                        -> Maybe ReadyPackage
                        -> SetupScriptOptions
     setupScriptOptions =
@@ -181,7 +181,7 @@ configureSetupScript :: PackageDBStack
                      -> VersionRange
                      -> Maybe Lock
                      -> Bool
-                     -> InstalledPackageIndex
+                     -> InstalledLibraryIndex
                      -> Maybe ReadyPackage
                      -> SetupScriptOptions
 configureSetupScript packageDBs
@@ -228,7 +228,7 @@ configureSetupScript packageDBs
     -- a global install. However we also allow looking in a specific package
     -- db.
     packageDBs' :: PackageDBStack
-    index'      :: Maybe InstalledPackageIndex
+    index'      :: Maybe InstalledLibraryIndex
     (packageDBs', index') =
       case packageDBs of
         (GlobalPackageDB:dbs) | UserPackageDB `notElem` dbs
@@ -264,7 +264,7 @@ configureSetupScript packageDBs
 -- source package index or installed package index.
 checkConfigExFlags :: Package pkg
                    => Verbosity
-                   -> InstalledPackageIndex
+                   -> InstalledLibraryIndex
                    -> PackageIndex pkg
                    -> ConfigExFlags
                    -> IO ()
@@ -291,7 +291,7 @@ checkConfigExFlags verbosity installedPkgIndex sourcePkgIndex flags = do
 planLocalPackage :: Verbosity -> Compiler
                  -> Platform
                  -> ConfigFlags -> ConfigExFlags
-                 -> InstalledPackageIndex
+                 -> InstalledLibraryIndex
                  -> SourcePackageDb
                  -> PkgConfigDb
                  -> IO (Progress String String SolverInstallPlan)

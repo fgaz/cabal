@@ -32,7 +32,7 @@ import Distribution.PackageDescription
 import Distribution.Simple.BuildPaths
 import Distribution.Simple.Compiler as C
 import Distribution.Simple.LocalBuildInfo
-import Distribution.Simple.PackageIndex
+import Distribution.Simple.LibraryIndex
 import Distribution.Simple.Program
 import Distribution.Simple.Utils
 import Distribution.Text
@@ -94,7 +94,7 @@ uhcLanguageExtensions =
      (FlexibleInstances,            alwaysOn)]
 
 getInstalledPackages :: Verbosity -> Compiler -> PackageDBStack -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getInstalledPackages verbosity comp packagedbs progdb = do
   let compilerid = compilerId comp
   systemPkgDir <- getGlobalPackageDir verbosity progdb

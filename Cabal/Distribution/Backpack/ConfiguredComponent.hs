@@ -30,6 +30,7 @@ import Distribution.Types.PackageId
 import Distribution.Types.PackageName
 import Distribution.Types.Mixin
 import Distribution.Types.ComponentName
+import Distribution.Types.LibraryName
 import Distribution.Types.UnqualComponentName
 import Distribution.Types.ComponentInclude
 import Distribution.Package
@@ -294,4 +295,4 @@ fixFakePkgName pkg_descr pn =
   else (pn,                    CLibName LMainLibName            )
   where
     subLibName = packageNameToUnqualComponentName pn
-    internalLibraries = mapMaybe libName (allLibraries pkg_descr)
+    internalLibraries = mapMaybe (libraryNameString . libName) (allLibraries pkg_descr)

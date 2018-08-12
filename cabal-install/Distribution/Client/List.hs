@@ -34,8 +34,8 @@ import Distribution.Simple.Program (ProgramDb)
 import Distribution.Simple.Utils
         ( equating, comparing, die', notice )
 import Distribution.Simple.Setup (fromFlag)
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
-import qualified Distribution.Simple.PackageIndex as InstalledPackageIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
+import qualified Distribution.Simple.LibraryIndex as InstalledLibraryIndex
 import Distribution.Version
          ( Version, mkVersion, versionNumbers, VersionRange, withinRange, anyVersion
          , intersectVersionRanges, simplifyVersionRange )
@@ -99,7 +99,7 @@ getPkgList verbosity packageDBs repoCtxt comp progdb listFlags pats = do
         pkgsInfo
             -- gather info for all packages
           | null pats = mergePackages
-                        (InstalledPackageIndex.allPackages installedPkgIndex)
+                        (InstalledLibraryIndex.allPackages installedPkgIndex)
                         (         PackageIndex.allPackages sourcePkgIndex)
 
             -- gather info for packages matching search term
@@ -109,7 +109,7 @@ getPkgList verbosity packageDBs repoCtxt comp progdb listFlags pats = do
           [(PackageName, [Installed.InstalledPackageInfo], [UnresolvedSourcePackage])]
         pkgsInfoMatching =
           let matchingInstalled = matchingPackages
-                                  InstalledPackageIndex.searchByNameSubstring
+                                  InstalledLibraryIndex.searchByNameSubstring
                                   installedPkgIndex
               matchingSource   = matchingPackages
                                  (\ idx n ->
@@ -191,7 +191,7 @@ info verbosity packageDBs repoCtxt comp progdb
         -- the combination of installed and source packages.
     let sourcePkgs' = PackageIndex.fromList
                     $ map packageId
-                      (InstalledPackageIndex.allPackages installedPkgIndex)
+                      (InstalledLibraryIndex.allPackages installedPkgIndex)
                    ++ map packageId
                       (PackageIndex.allPackages sourcePkgIndex)
     pkgSpecifiers <- resolveUserTargets verbosity repoCtxt
@@ -210,7 +210,7 @@ info verbosity packageDBs repoCtxt comp progdb
 
   where
     gatherPkgInfo :: (PackageName -> VersionRange) ->
-                     InstalledPackageIndex ->
+                     InstalledLibraryIndex ->
                      PackageIndex.PackageIndex UnresolvedSourcePackage ->
                      PackageSpecifier UnresolvedSourcePackage ->
                      Either String PackageDisplayInfo
@@ -229,7 +229,7 @@ info verbosity packageDBs repoCtxt comp progdb
         (pref, installedPkgs, sourcePkgs) =
           sourcePkgsInfo prefs name installedPkgIndex sourcePkgIndex
 
-        selectedInstalledPkgs = InstalledPackageIndex.lookupDependency
+        selectedInstalledPkgs = InstalledLibraryIndex.lookupDependency
                                 installedPkgIndex
                                 (Dependency name verConstraint)
         selectedSourcePkgs    = PackageIndex.lookupDependency sourcePkgIndex
@@ -255,14 +255,14 @@ info verbosity packageDBs repoCtxt comp progdb
 sourcePkgsInfo ::
   (PackageName -> VersionRange)
   -> PackageName
-  -> InstalledPackageIndex
+  -> InstalledLibraryIndex
   -> PackageIndex.PackageIndex UnresolvedSourcePackage
   -> (VersionRange, [Installed.InstalledPackageInfo], [UnresolvedSourcePackage])
 sourcePkgsInfo prefs name installedPkgIndex sourcePkgIndex =
   (pref, installedPkgs, sourcePkgs)
   where
     pref          = prefs name
-    installedPkgs = concatMap snd (InstalledPackageIndex.lookupPackageName
+    installedPkgs = concatMap snd (InstalledLibraryIndex.lookupPackageName
                                    installedPkgIndex name)
     sourcePkgs    = PackageIndex.lookupPackageName sourcePkgIndex name
 

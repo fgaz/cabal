@@ -14,13 +14,13 @@ import Distribution.Compat.Prelude
 
 import Distribution.Types.BuildInfo
 import Distribution.Types.ModuleReexport
-import Distribution.Types.UnqualComponentName
+import Distribution.Types.LibraryName
 import Distribution.ModuleName
 
 import qualified Distribution.Types.BuildInfo.Lens as L
 
 data Library = Library
-    { libName           :: Maybe UnqualComponentName
+    { libName           :: LibraryName
     , exposedModules    :: [ModuleName]
     , reexportedModules :: [ModuleReexport]
     , signatures        :: [ModuleName]   -- ^ What sigs need implementations?
@@ -38,7 +38,7 @@ instance NFData Library where rnf = genericRnf
 
 instance Monoid Library where
   mempty = Library {
-    libName = mempty,
+    libName = LMainLibName,
     exposedModules = mempty,
     reexportedModules = mempty,
     signatures = mempty,
@@ -49,7 +49,7 @@ instance Monoid Library where
 
 instance Semigroup Library where
   a <> b = Library {
-    libName = combine libName,
+    libName = mergeLibNames (libName a) (libName b),
     exposedModules = combine exposedModules,
     reexportedModules = combine reexportedModules,
     signatures = combine signatures,
@@ -57,6 +57,9 @@ instance Semigroup Library where
     libBuildInfo   = combine libBuildInfo
   }
     where combine field = field a `mappend` field b
+          mergeLibNames LMainLibName bn = bn
+          mergeLibNames an LMainLibName = an
+          mergeLibNames (LSubLibName aun) (LSubLibName bun) = LSubLibName (aun <> bun)
 
 emptyLibrary :: Library
 emptyLibrary = mempty

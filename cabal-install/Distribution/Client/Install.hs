@@ -118,8 +118,8 @@ import Distribution.Simple.Compiler
          , CompilerInfo(..), compilerInfo, PackageDB(..), PackageDBStack )
 import Distribution.Simple.Program (ProgramDb)
 import qualified Distribution.Simple.InstallDirs as InstallDirs
-import qualified Distribution.Simple.PackageIndex as PackageIndex
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import Distribution.Simple.Setup
          ( haddockCommand, HaddockFlags(..)
          , buildCommand, BuildFlags(..), emptyBuildFlags
@@ -249,7 +249,7 @@ install verbosity packageDBs repos comp platform progdb useSandbox mSandboxPkgIn
 
 -- TODO: Make InstallContext a proper data type with documented fields.
 -- | Common context for makeInstallPlan and processInstallPlan.
-type InstallContext = ( InstalledPackageIndex, SourcePackageDb
+type InstallContext = ( InstalledLibraryIndex, SourcePackageDb
                       , PkgConfigDb
                       , [UserTarget], [PackageSpecifier UnresolvedSourcePackage]
                       , HttpTransport )
@@ -358,7 +358,7 @@ planPackages :: Verbosity
              -> ConfigFlags
              -> ConfigExFlags
              -> InstallFlags
-             -> InstalledPackageIndex
+             -> InstalledLibraryIndex
              -> SourcePackageDb
              -> PkgConfigDb
              -> [PackageSpecifier UnresolvedSourcePackage]
@@ -501,7 +501,7 @@ pruneInstallPlan pkgSpecifiers =
 -- | Perform post-solver checks of the install plan and print it if
 -- either requested or needed.
 checkPrintPlan :: Verbosity
-               -> InstalledPackageIndex
+               -> InstalledLibraryIndex
                -> InstallPlan
                -> SourcePackageDb
                -> InstallFlags
@@ -536,16 +536,16 @@ checkPrintPlan verbosity installed installPlan sourcePkgDb
   -- Packages that are already broken.
   let oldBrokenPkgs =
           map Installed.installedUnitId
-        . PackageIndex.reverseDependencyClosure installed
+        . LibraryIndex.reverseDependencyClosure installed
         . map (Installed.installedUnitId . fst)
-        . PackageIndex.brokenPackages
+        . LibraryIndex.brokenPackages
         $ installed
   let excluded = reinstalledPkgs ++ oldBrokenPkgs
   -- Packages that are reverse dependencies of replaced packages are very
   -- likely to be broken. We exclude packages that are already broken.
   let newBrokenPkgs =
         filter (\ p -> not (Installed.installedUnitId p `elem` excluded))
-               (PackageIndex.reverseDependencyClosure installed reinstalledPkgs)
+               (LibraryIndex.reverseDependencyClosure installed reinstalledPkgs)
   let containsReinstalls = not (null reinstalledPkgs)
   let breaksPkgs         = not (null newBrokenPkgs)
 
@@ -609,11 +609,11 @@ extractReinstalls :: PackageStatus -> [UnitId]
 extractReinstalls (Reinstall ipids _) = ipids
 extractReinstalls _                   = []
 
-packageStatus :: InstalledPackageIndex
+packageStatus :: InstalledLibraryIndex
               -> ReadyPackage
               -> PackageStatus
 packageStatus installedPkgIndex cpkg =
-  case PackageIndex.lookupPackageName installedPkgIndex
+  case LibraryIndex.lookupPackageName installedPkgIndex
                                       (packageName cpkg) of
     [] -> NewPackage
     ps ->  case filter ((== mungedId cpkg)
@@ -640,7 +640,7 @@ packageStatus installedPkgIndex cpkg =
         nub
       . sort
       . map mungedId
-      . mapMaybe (PackageIndex.lookupUnitId installedPkgIndex)
+      . mapMaybe (LibraryIndex.lookupUnitId installedPkgIndex)
 
     changed (InBoth    pkgid pkgid') = pkgid /= pkgid'
     changed _                        = True
@@ -1073,7 +1073,7 @@ type UseLogFile = Maybe (PackageIdentifier -> UnitId -> FilePath, Verbosity)
 
 performInstallations :: Verbosity
                      -> InstallArgs
-                     -> InstalledPackageIndex
+                     -> InstalledLibraryIndex
                      -> InstallPlan
                      -> IO BuildOutcomes
 performInstallations verbosity

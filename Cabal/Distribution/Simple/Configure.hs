@@ -67,8 +67,8 @@ import Distribution.Simple.PreProcess
 import Distribution.Package
 import qualified Distribution.InstalledPackageInfo as Installed
 import Distribution.InstalledPackageInfo (InstalledPackageInfo)
-import qualified Distribution.Simple.PackageIndex as PackageIndex
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import Distribution.PackageDescription as PD hiding (Flag)
 import Distribution.Types.PackageDescription as PD
 import Distribution.PackageDescription.PrettyPrint
@@ -390,14 +390,14 @@ configure (pkg_descr0, pbi) cfg = do
             (mkProgramDb cfg (configPrograms cfg))
             (lessVerbose verbosity)
 
-    -- The InstalledPackageIndex of all installed packages
-    installedPackageSet :: InstalledPackageIndex
+    -- The InstalledLibraryIndex of all installed packages
+    installedPackageSet :: InstalledLibraryIndex
         <- getInstalledPackages (lessVerbose verbosity) comp
                                   packageDbs programDb
 
     -- The set of package names which are "shadowed" by internal
     -- packages, and which component they map to
-    let internalPackageSet :: Map PackageName (Maybe UnqualComponentName)
+    let internalPackageSet :: Map PackageName LibraryName
         internalPackageSet = getInternalPackages pkg_descr0
 
     -- Make a data structure describing what components are enabled.
@@ -588,7 +588,7 @@ configure (pkg_descr0, pbi) cfg = do
     -- internalPackageSet
     -- use_external_internal_deps
     (buildComponents :: [ComponentLocalBuildInfo],
-     packageDependsIndex :: InstalledPackageIndex) <-
+     packageDependsIndex :: InstalledLibraryIndex) <-
       runLogProgress verbosity $ configureComponentLocalBuildInfos
             verbosity
             use_external_internal_deps
@@ -710,7 +710,7 @@ configure (pkg_descr0, pbi) cfg = do
                 cabalFilePath       = flagToMaybe (configCabalFilePath cfg),
                 componentGraph      = Graph.fromDistinctList buildComponents,
                 componentNameMap    = buildComponentsMap,
-                installedPkgs       = packageDependsIndex,
+                installedLibs       = packageDependsIndex,
                 pkgDescrFile        = Nothing,
                 localPkgDescr       = pkg_descr',
                 withPrograms        = programDb'',
@@ -837,7 +837,7 @@ checkExactConfiguration verbosity pkg_descr0 cfg =
         ++ "but the following flags were not specified: "
         ++ intercalate ", " (map show diffFlags)
 
--- | Create a PackageIndex that makes *any libraries that might be*
+-- | Create a LibraryIndex that makes *any libraries that might be*
 -- defined internally to this package look like installed packages, in
 -- case an executable should refer to any of them as dependencies.
 --
@@ -847,13 +847,13 @@ checkExactConfiguration verbosity pkg_descr0 cfg =
 -- does the resolution of conditionals, and it takes internalPackageSet
 -- as part of its input.
 getInternalPackages :: GenericPackageDescription
-                    -> Map PackageName (Maybe UnqualComponentName)
+                    -> Map PackageName LibraryName
 getInternalPackages pkg_descr0 =
     -- TODO: some day, executables will be fair game here too!
     let pkg_descr = flattenPackageDescription pkg_descr0
         f lib = case libName lib of
-                    Nothing -> (packageName pkg_descr, Nothing)
-                    Just n' -> (unqualComponentNameToPackageName n', Just n')
+                    LMainLibName -> (packageName pkg_descr, LMainLibName)
+                    LSubLibName n' -> (unqualComponentNameToPackageName n', LSubLibName n')
     in Map.fromList (map f (allLibraries pkg_descr))
 
 -- | Returns true if a dependency is satisfiable.  This function may
@@ -863,8 +863,8 @@ dependencySatisfiable
     :: Bool -- ^ use external internal deps?
     -> Bool -- ^ exact configuration?
     -> PackageName
-    -> InstalledPackageIndex -- ^ installed set
-    -> Map PackageName (Maybe UnqualComponentName) -- ^ internal set
+    -> InstalledLibraryIndex -- ^ installed set
+    -> Map PackageName LibraryName -- ^ internal set
     -> Map (PackageName, ComponentName) InstalledPackageInfo -- ^ required dependencies
     -> (Dependency -> Bool)
 dependencySatisfiable
@@ -904,18 +904,18 @@ dependencySatisfiable
     isInternalDep = Map.member depName internalPackageSet
 
     depSatisfiable =
-        not . null $ PackageIndex.lookupDependency installedPackageSet d
+        not . null $ LibraryIndex.lookupDependency installedPackageSet d
 
     internalDepSatisfiable =
-        not . null $ PackageIndex.lookupInternalDependency
-                        installedPackageSet (Dependency pn vr) cn
+        not . null $ LibraryIndex.lookupInternalDependency
+                        installedPackageSet (Dependency pn vr) ln
       where
-        cn | pn == depName
-           = Nothing
+        ln | pn == depName
+           = LMainLibName
            | otherwise
            -- Reinterpret the "package name" as an unqualified component
            -- name
-           = Just (mkUnqualComponentName (unPackageName depName))
+           = LSubLibName (mkUnqualComponentName (unPackageName depName))
 
 -- | Finalize a generic package description.  The workhorse is
 -- 'finalizePD' but there's a bit of other nattering
@@ -1011,8 +1011,8 @@ checkCompilerProblems verbosity comp pkg_descr enabled = do
 configureDependencies
     :: Verbosity
     -> UseExternalInternalDeps
-    -> Map PackageName (Maybe UnqualComponentName) -- ^ internal packages
-    -> InstalledPackageIndex -- ^ installed packages
+    -> Map PackageName LibraryName -- ^ internal packages
+    -> InstalledLibraryIndex -- ^ installed packages
     -> Map (PackageName, ComponentName) InstalledPackageInfo -- ^ required deps
     -> PackageDescription
     -> ComponentRequestedSpec
@@ -1185,8 +1185,8 @@ data FailedDependency = DependencyNotExists PackageName
 
 -- | Test for a package dependency and record the version we have installed.
 selectDependency :: PackageId -- ^ Package id of current package
-                 -> Map PackageName (Maybe UnqualComponentName)
-                 -> InstalledPackageIndex  -- ^ Installed packages
+                 -> Map PackageName LibraryName
+                 -> InstalledLibraryIndex  -- ^ Installed packages
                  -> Map (PackageName, ComponentName) InstalledPackageInfo
                     -- ^ Packages for which we have been given specific deps to
                     -- use
@@ -1211,8 +1211,8 @@ selectDependency pkgid internalIndex installedIndex requiredDepsMap
   -- We want "build-depends: MyLibrary" always to match the internal library
   -- even if there is a newer installed library "MyLibrary-0.2".
   case Map.lookup dep_pkgname internalIndex of
-    Just cname -> if use_external_internal_deps
-                    then do_external (Just cname)
+    Just lname -> if use_external_internal_deps
+                    then do_external (Just lname)
                     else do_internal
     _          -> do_external Nothing
   where
@@ -1235,13 +1235,13 @@ selectDependency pkgid internalIndex installedIndex requiredDepsMap
 
     -- It's an external package, normal situation
     do_external_external =
-        case PackageIndex.lookupDependency installedIndex dep of
+        case LibraryIndex.lookupDependency installedIndex dep of
           []   -> Left (DependencyNotExists dep_pkgname)
           pkgs -> Right $ head $ snd $ last pkgs
 
     -- It's an internal library, being looked up externally
     do_external_internal mb_uqn =
-        case PackageIndex.lookupInternalDependency installedIndex
+        case LibraryIndex.lookupInternalDependency installedIndex
                 (Dependency (packageName pkgid) vr) mb_uqn of
           []   -> Left (DependencyMissingInternal dep_pkgname (packageName pkgid))
           pkgs -> Right $ head $ snd $ last pkgs
@@ -1280,7 +1280,7 @@ reportFailedDependencies verbosity failed =
 getInstalledPackages :: Verbosity -> Compiler
                      -> PackageDBStack -- ^ The stack of package databases.
                      -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getInstalledPackages verbosity comp packageDBs progdb = do
   when (null packageDBs) $
     die' verbosity $ "No package databases have been specified. If you use "
@@ -1305,7 +1305,7 @@ getInstalledPackages verbosity comp packageDBs progdb = do
 -- are involved these sanity checks are not desirable.
 getPackageDBContents :: Verbosity -> Compiler
                      -> PackageDB -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getPackageDBContents verbosity comp packageDB progdb = do
   info verbosity "Reading installed packages..."
   case compilerFlavor comp of
@@ -1359,7 +1359,7 @@ interpretPackageDbFlags userInstall specificDBs =
 -- pick.
 combinedConstraints :: [Dependency] ->
                        [GivenComponent] ->
-                       InstalledPackageIndex ->
+                       InstalledLibraryIndex ->
                        Either String ([Dependency],
                                       Map (PackageName, ComponentName) InstalledPackageInfo)
 combinedConstraints constraints dependencies installedPackages = do
@@ -1392,7 +1392,7 @@ combinedConstraints constraints dependencies installedPackages = do
     dependenciesPkgInfo =
       [ (pkgname, CLibName lname, cid, mpkg)
       | GivenComponent pkgname lname cid <- dependencies
-      , let mpkg = PackageIndex.lookupComponentId
+      , let mpkg = LibraryIndex.lookupComponentId
                      installedPackages cid
       ]
 
@@ -1764,7 +1764,7 @@ checkForeignDeps pkg lbi verbosity =
 
         collectField f = concatMap f allBi
         allBi = enabledBuildInfos pkg (componentEnabledSpec lbi)
-        deps = PackageIndex.topologicalOrder (installedPkgs lbi)
+        deps = LibraryIndex.topologicalOrder (installedLibs lbi)
 
         builds program args = do
             tempDir <- getTemporaryDirectory
@@ -1931,7 +1931,7 @@ checkRelocatable verbosity pkg lbi
         -- check for each ComponentId.
         installDirs   = absoluteInstallDirs pkg lbi NoCopyDest
         p             = prefix installDirs
-        ipkgs         = PackageIndex.allPackages (installedPkgs lbi)
+        ipkgs         = LibraryIndex.allPackages (installedLibs lbi)
         msg l         = "Library directory of a dependency: " ++ show l ++
                         "\nis not relative to the installation prefix:\n" ++
                         show p

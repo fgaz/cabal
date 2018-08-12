@@ -46,7 +46,7 @@ import Distribution.Package
          ( Package, packageId, packageName, packageVersion )
 import Distribution.Simple.Compiler
          ( Compiler, compilerInfo, PackageDBStack )
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import Distribution.Simple.Program
          ( ProgramDb )
 import Distribution.Simple.Setup
@@ -143,7 +143,7 @@ planPackages :: Verbosity
              -> Platform
              -> Maybe SandboxPackageInfo
              -> FreezeFlags
-             -> InstalledPackageIndex
+             -> InstalledLibraryIndex
              -> SourcePackageDb
              -> PkgConfigDb
              -> [PackageSpecifier UnresolvedSourcePackage]

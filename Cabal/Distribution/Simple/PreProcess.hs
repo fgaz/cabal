@@ -40,7 +40,7 @@ import qualified Distribution.ModuleName as ModuleName
 import Distribution.ModuleName (ModuleName)
 import Distribution.PackageDescription as PD
 import qualified Distribution.InstalledPackageInfo as Installed
-import qualified Distribution.Simple.PackageIndex as PackageIndex
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
 import Distribution.Simple.CCompiler
 import Distribution.Simple.Compiler
 import Distribution.Simple.LocalBuildInfo
@@ -53,6 +53,7 @@ import Distribution.Text
 import Distribution.Version
 import Distribution.Verbosity
 import Distribution.Types.ForeignLib
+import Distribution.Types.LibraryName
 import Distribution.Types.UnqualComponentName
 
 import System.Directory (doesFileExist)
@@ -458,12 +459,12 @@ ppHsc2hs bi lbi clbi =
        ++ ["-o", outFile, inFile]
   }
   where
-    hacked_index = packageHacks (installedPkgs lbi)
+    hacked_index = packageHacks (installedLibs lbi)
     -- Look only at the dependencies of the current component
     -- being built!  This relies on 'installedPkgs' maintaining
     -- 'InstalledPackageInfo' for internal deps too; see #2971.
-    pkgs = PackageIndex.topologicalOrder $
-           case PackageIndex.dependencyClosure hacked_index
+    pkgs = LibraryIndex.topologicalOrder $
+           case LibraryIndex.dependencyClosure hacked_index
                     (map fst (componentPackageDeps clbi)) of
             Left index' -> index'
             Right inf ->
@@ -479,9 +480,9 @@ ppHsc2hs bi lbi clbi =
     -- OS X (its ld is a tad stricter than gnu ld). Thus we remove the
     -- ldOptions for GHC's rts package:
     hackRtsPackage index =
-      case PackageIndex.lookupPackageName index (mkPackageName "rts") of
+      case LibraryIndex.lookupPackageName index (mkPackageName "rts") of
         [(_, [rts])]
-           -> PackageIndex.insert rts { Installed.ldOptions = [] } index
+           -> LibraryIndex.insert rts { Installed.ldOptions = [] } index
         _  -> error "No (or multiple) ghc rts package is registered!!"
 
 ppHsc2hsExtras :: PreProcessorExtras
@@ -530,7 +531,7 @@ ppC2hs bi lbi clbi =
            , inBaseDir </> inRelativeFile ]
   }
   where
-    pkgs = PackageIndex.topologicalOrder (installedPkgs lbi)
+    pkgs = LibraryIndex.topologicalOrder (installedLibs lbi)
 
 ppC2hsExtras :: PreProcessorExtras
 ppC2hsExtras d = filter (\p -> takeExtensions p == ".chs.c") `fmap`
@@ -725,7 +726,7 @@ preprocessExtras verbosity comp lbi = case comp of
     component_dirs = component_names (localPkgDescr lbi)
     -- TODO: libify me
     component_names pkg_descr = fmap unUnqualComponentName $
-        mapMaybe libName (subLibraries pkg_descr) ++
+        catMaybes (fmap (libraryNameString . libName) $ subLibraries pkg_descr) ++
         map exeName (executables pkg_descr) ++
         map testName (testSuites pkg_descr) ++
         map benchmarkName (benchmarks pkg_descr)

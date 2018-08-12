@@ -49,8 +49,8 @@ import Distribution.Simple.Program.Find
          ( ProgramSearchPathEntry(..) )
 import Distribution.Client.Config
          ( getCabalDir )
-import Distribution.Simple.PackageIndex
-         ( InstalledPackageIndex, lookupPackageName, lookupUnitId )
+import Distribution.Simple.LibraryIndex
+         ( InstalledLibraryIndex, lookupPackageName, lookupUnitId )
 import Distribution.Types.InstalledPackageInfo
          ( InstalledPackageInfo(..) )
 import Distribution.Types.Version
@@ -569,7 +569,7 @@ globalPackages = mkPackageName <$>
   , "bin-package-db"
   ]
 
-environmentFileToSpecifiers :: InstalledPackageIndex -> [GhcEnvironmentFileEntry] 
+environmentFileToSpecifiers :: InstalledLibraryIndex -> [GhcEnvironmentFileEntry] 
                             -> ([PackageSpecifier a], [GhcEnvironmentFileEntry])
 environmentFileToSpecifiers ipi = foldMap $ \case
     (GhcEnvFilePackageId unitId) 

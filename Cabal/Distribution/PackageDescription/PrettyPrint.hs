@@ -136,12 +136,12 @@ ppCondLibrary :: Maybe (CondTree ConfVar [Dependency] Library) -> Doc
 ppCondLibrary Nothing = mempty
 ppCondLibrary (Just condTree) =
     emptyLine $ text "library" $+$
-    nest indentWith (ppCondTree2 (libraryFieldGrammar Nothing) condTree)
+    nest indentWith (ppCondTree2 (libraryFieldGrammar LMainLibName) condTree)
 
 ppCondSubLibraries :: [(UnqualComponentName, CondTree ConfVar [Dependency] Library)] -> Doc
 ppCondSubLibraries libs = vcat
     [ emptyLine $ (text "library" <+> disp n) $+$
-      nest indentWith (ppCondTree2 (libraryFieldGrammar $ Just n) condTree)
+      nest indentWith (ppCondTree2 (libraryFieldGrammar $ LSubLibName n) condTree)
     | (n, condTree) <- libs
     ]
 
@@ -222,7 +222,10 @@ pdToGpd pd = GenericPackageDescription
     -- We set CondTree's [Dependency] to an empty list, as it
     -- is not pretty printed anyway.
     mkCondTree  x = CondNode x [] []
-    mkCondTreeL l = (fromMaybe (mkUnqualComponentName "") (libName l), CondNode l [] [])
+    mkCondTreeL l = (mainLibToEmptyUnqual $ libName l, CondNode l [] [])
+      where
+        mainLibToEmptyUnqual LMainLibName = mkUnqualComponentName ""
+        mainLibToEmptyUnqual (LSubLibName n) = n
 
     mkCondTree'
         :: (a -> UnqualComponentName)

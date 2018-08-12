@@ -23,7 +23,7 @@ import Distribution.Types.MungedPackageId            -- from Cabal
 import Distribution.Types.MungedPackageName          -- from Cabal
 import Distribution.PackageDescription as PD         -- from Cabal
 import Distribution.PackageDescription.Configuration as PDC
-import qualified Distribution.Simple.PackageIndex as SI
+import qualified Distribution.Simple.LibraryIndex as SI
 import Distribution.System
 import Distribution.Types.ForeignLib
 
@@ -57,7 +57,7 @@ import Distribution.Solver.Modular.Version
 -- explicitly requested.
 convPIs :: OS -> Arch -> CompilerInfo -> Map PN [LabeledPackageConstraint]
         -> ShadowPkgs -> StrongFlags -> SolveExecutables
-        -> SI.InstalledPackageIndex -> CI.PackageIndex (SourcePackage loc)
+        -> SI.InstalledLibraryIndex -> CI.PackageIndex (SourcePackage loc)
         -> Index
 convPIs os arch comp constraints sip strfl solveExes iidx sidx =
   mkIndex $
@@ -65,7 +65,7 @@ convPIs os arch comp constraints sip strfl solveExes iidx sidx =
 
 -- | Convert a Cabal installed package index to the simpler,
 -- more uniform index format of the solver.
-convIPI' :: ShadowPkgs -> SI.InstalledPackageIndex -> [(PN, I, PInfo)]
+convIPI' :: ShadowPkgs -> SI.InstalledLibraryIndex -> [(PN, I, PInfo)]
 convIPI' (ShadowPkgs sip) idx =
     -- apply shadowing whenever there are multiple installed packages with
     -- the same version
@@ -89,7 +89,7 @@ convId ipi = (pn, I ver $ Inst $ IPI.installedUnitId ipi)
         pn = mkPackageName (unMungedPackageName mpn)
 
 -- | Convert a single installed package into the solver-specific format.
-convIP :: SI.InstalledPackageIndex -> InstalledPackageInfo -> (PN, I, PInfo)
+convIP :: SI.InstalledLibraryIndex -> InstalledPackageInfo -> (PN, I, PInfo)
 convIP idx ipi =
   case mapM (convIPId (DependencyReason pn M.empty S.empty) comp idx) (IPI.depends ipi) of
         Nothing  -> (pn, i, PInfo [] M.empty M.empty (Just Broken))
@@ -100,7 +100,7 @@ convIP idx ipi =
   (pn, i) = convId ipi
   -- 'sourceLibName' is unreliable, but for now we only really use this for
   -- primary libs anyways
-  comp = componentNameToComponent $ libraryComponentName $ sourceLibName ipi
+  comp = componentNameToComponent $ CLibName $ sourceLibName ipi
 -- TODO: Installed packages should also store their encapsulations!
 
 -- Note [Index conversion with internal libraries]
@@ -136,14 +136,14 @@ convIP idx ipi =
 -- May return Nothing if the package can't be found in the index. That
 -- indicates that the original package having this dependency is broken
 -- and should be ignored.
-convIPId :: DependencyReason PN -> Component -> SI.InstalledPackageIndex -> UnitId -> Maybe (FlaggedDep PN)
+convIPId :: DependencyReason PN -> Component -> SI.InstalledLibraryIndex -> UnitId -> Maybe (FlaggedDep PN)
 convIPId dr comp idx ipid =
   case SI.lookupUnitId idx ipid of
     Nothing  -> Nothing
     Just ipi -> let (pn, i) = convId ipi
                 in  Just (D.Simple (LDep dr (Dep (PkgComponent pn ExposedLib) (Fixed i))) comp)
                 -- NB: something we pick up from the
-                -- InstalledPackageIndex is NEVER an executable
+                -- InstalledLibraryIndex is NEVER an executable
 
 -- | Convert a cabal-install source package index to the simpler,
 -- more uniform index format of the solver.

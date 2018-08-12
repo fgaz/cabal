@@ -49,7 +49,7 @@ import qualified Distribution.Simple.GHC   as GHC
 import qualified Distribution.Simple.GHCJS as GHCJS
 import qualified Distribution.Simple.UHC   as UHC
 import qualified Distribution.Simple.HaskellSuite as HaskellSuite
-import qualified Distribution.Simple.PackageIndex as Index
+import qualified Distribution.Simple.LibraryIndex as Index
 
 import qualified Distribution.Simple.Build.Macros      as Build.Macros
 import qualified Distribution.Simple.Build.PathsModule as Build.PathsModule
@@ -107,7 +107,7 @@ build pkg_descr lbi flags suffixes = do
 
   internalPackageDB <- createInternalPackageDB verbosity lbi distPref
 
-  (\f -> foldM_ f (installedPkgs lbi) componentsToBuild) $ \index target -> do
+  (\f -> foldM_ f (installedLibs lbi) componentsToBuild) $ \index target -> do
     let comp = targetComponent target
         clbi = targetCLBI target
     componentInitialBuildSteps distPref pkg_descr lbi clbi verbosity
@@ -116,7 +116,7 @@ build pkg_descr lbi flags suffixes = do
         lbi'   = lbi {
                    withPrograms  = progs',
                    withPackageDB = withPackageDB lbi ++ [internalPackageDB],
-                   installedPkgs = index
+                   installedLibs = index
                  }
     mb_ipi <- buildComponent verbosity (buildNumJobs flags) pkg_descr
                    lbi' suffixes comp clbi distPref
@@ -453,7 +453,7 @@ testSuiteLibV09AsLibAndExe pkg_descr
   where
     bi  = testBuildInfo test
     lib = Library {
-            libName = Nothing,
+            libName = LMainLibName,
             exposedModules = [ m ],
             reexportedModules = [],
             signatures = [],
@@ -463,7 +463,7 @@ testSuiteLibV09AsLibAndExe pkg_descr
     -- This is, like, the one place where we use a CTestName for a library.
     -- Should NOT use library name, since that could conflict!
     PackageIdentifier pkg_name pkg_ver = package pkg_descr
-    compat_name = computeCompatPackageName pkg_name (Just (testName test))
+    compat_name = computeCompatPackageName pkg_name (LSubLibName (testName test))
     compat_key = computeCompatPackageKey (compiler lbi) compat_name pkg_ver (componentUnitId clbi)
     libClbi = LibComponentLocalBuildInfo
                 { componentPackageDeps = componentPackageDeps clbi

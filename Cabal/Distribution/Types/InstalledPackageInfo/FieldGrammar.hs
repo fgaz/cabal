@@ -22,7 +22,7 @@ import Distribution.Parsec.Newtypes
 import Distribution.Pretty
 import Distribution.Text
 import Distribution.Types.MungedPackageName
-import Distribution.Types.UnqualComponentName
+import Distribution.Types.LibraryName
 import Distribution.Version
 
 import qualified Data.Char                       as Char
@@ -104,10 +104,12 @@ ipiFieldGrammar = mkInstalledPackageInfo
         -- _basicPkgName is not used
         -- setMaybePackageId says it can be no-op.
         (PackageIdentifier pn _basicVersion)
-        (mb_uqn <|> _basicLibName)
+        libname'
         (mkComponentId "") -- installedComponentId_, not in use
       where
-        (pn, mb_uqn) = decodeCompatPackageName _basicName
+        (pn, libname) = decodeCompatPackageName _basicName
+        libname' = case libname of LMainLibName -> _basicLibName
+                                   l            -> l
 {-# SPECIALIZE ipiFieldGrammar :: FieldDescrs InstalledPackageInfo InstalledPackageInfo #-}
 {-# SPECIALIZE ipiFieldGrammar :: ParsecFieldGrammar InstalledPackageInfo InstalledPackageInfo #-}
 {-# SPECIALIZE ipiFieldGrammar :: PrettyFieldGrammar InstalledPackageInfo InstalledPackageInfo #-}
@@ -138,8 +140,8 @@ showExposedModules xs
 maybePackageName :: InstalledPackageInfo -> Maybe PackageName
 maybePackageName ipi =
     case sourceLibName ipi of
-        Nothing -> Nothing
-        Just _ -> Just (packageName ipi)
+        LMainLibName -> Nothing
+        LSubLibName _ -> Just (packageName ipi)
 
 -- | Setter for the @package-name@ field.  It should be acceptable for this
 -- to be a no-op.
@@ -219,7 +221,7 @@ data Basic = Basic
     { _basicName    :: MungedPackageName
     , _basicVersion :: Version
     , _basicPkgName :: Maybe PackageName
-    , _basicLibName :: Maybe UnqualComponentName
+    , _basicLibName :: LibraryName
     }
 
 basic :: Lens' InstalledPackageInfo Basic
@@ -249,7 +251,7 @@ basicPkgName :: Lens' Basic (Maybe PackageName)
 basicPkgName f b = (\x -> b { _basicPkgName = x }) <$> f (_basicPkgName b)
 {-# INLINE basicPkgName #-}
 
-basicLibName :: Lens' Basic (Maybe UnqualComponentName)
+basicLibName :: Lens' Basic LibraryName
 basicLibName f b = (\x -> b { _basicLibName = x }) <$> f (_basicLibName b)
 {-# INLINE basicLibName #-}
 
@@ -260,4 +262,4 @@ basicFieldGrammar = Basic
     <$> optionalFieldDefAla "name"          MQuoted  basicName (mungedPackageName emptyInstalledPackageInfo)
     <*> optionalFieldDefAla "version"       MQuoted  basicVersion nullVersion
     <*> optionalField       "package-name"           basicPkgName
-    <*> optionalField       "lib-name"               basicLibName
+    <*> optionalFieldDef    "lib-name"               basicLibName LMainLibName

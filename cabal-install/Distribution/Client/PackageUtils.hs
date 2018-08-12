@@ -21,7 +21,7 @@ import Distribution.Types.ComponentRequestedSpec
 import Distribution.Types.Dependency
 import Distribution.Types.UnqualComponentName
 import Distribution.PackageDescription
-         ( PackageDescription(..), libName, enabledBuildDepends )
+         ( PackageDescription(..), libName, enabledBuildDepends, LibraryName(..) )
 import Distribution.Version
          ( withinRange, isAnyVersion )
 
@@ -36,5 +36,5 @@ externalBuildDepends pkg spec = filter (not . internal) (enabledBuildDepends pkg
     internal (Dependency depName versionRange) =
            (depName == packageName pkg &&
             packageVersion pkg `withinRange` versionRange) ||
-           (Just (packageNameToUnqualComponentName depName) `elem` map libName (subLibraries pkg) &&
+           (LSubLibName (packageNameToUnqualComponentName depName) `elem` map libName (subLibraries pkg) &&
             isAnyVersion versionRange)

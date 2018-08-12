@@ -19,6 +19,7 @@ import Distribution.Compat.Prelude
 import qualified Distribution.InstalledPackageInfo as Current
 import qualified Distribution.Types.AbiHash        as Current
 import qualified Distribution.Types.ComponentId    as Current
+import qualified Distribution.Types.LibraryName    as Current
 import qualified Distribution.Types.UnitId         as Current
 import Distribution.Simple.GHC.IPIConvert
 import Distribution.Text
@@ -76,7 +77,7 @@ toCurrent ipi@InstalledPackageInfo{} =
     Current.installedComponentId_ = Current.mkComponentId (display pid),
     Current.instantiatedWith   = [],
     -- Internal libraries not supported!
-    Current.sourceLibName      = Nothing,
+    Current.sourceLibName      = Current.LMainLibName,
     Current.compatPackageKey   = "",
     Current.abiHash            = Current.mkAbiHash "", -- bogus but old GHCs don't care.
     Current.license            = convertLicense (license ipi),

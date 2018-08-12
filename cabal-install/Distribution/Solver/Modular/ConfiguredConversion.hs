@@ -8,7 +8,7 @@ import Data.Either (partitionEithers)
 
 import Distribution.Package (UnitId, packageId)
 
-import qualified Distribution.Simple.PackageIndex as SI
+import qualified Distribution.Simple.LibraryIndex as SI
 
 import Distribution.Solver.Modular.Configured
 import Distribution.Solver.Modular.Package
@@ -25,7 +25,7 @@ import           Distribution.Solver.Types.SourcePackage
 -- | Converts from the solver specific result @CP QPN@ into
 -- a 'ResolverPackage', which can then be converted into
 -- the install plan.
-convCP :: SI.InstalledPackageIndex ->
+convCP :: SI.InstalledLibraryIndex ->
           CI.PackageIndex (SourcePackage loc) ->
           CP QPN -> ResolverPackage loc
 convCP iidx sidx (CP qpi fa es ds) =

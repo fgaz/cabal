@@ -60,7 +60,7 @@ import qualified Distribution.Types.UnqualComponentName as C
 import qualified Distribution.Types.CondTree            as C
 import qualified Distribution.PackageDescription        as C
 import qualified Distribution.PackageDescription.Check  as C
-import qualified Distribution.Simple.PackageIndex       as C.PackageIndex
+import qualified Distribution.Simple.LibraryIndex       as C.LibraryIndex
 import           Distribution.Simple.Setup (BooleanFlag(..))
 import qualified Distribution.System                    as C
 import           Distribution.Text (display)
@@ -633,8 +633,8 @@ exInstPkgId ex = C.PackageIdentifier {
 exAvIdx :: [ExampleAvailable] -> CI.PackageIndex.PackageIndex UnresolvedSourcePackage
 exAvIdx = CI.PackageIndex.fromList . map exAvSrcPkg
 
-exInstIdx :: [ExampleInstalled] -> C.PackageIndex.InstalledPackageIndex
-exInstIdx = C.PackageIndex.fromList . map exInstInfo
+exInstIdx :: [ExampleInstalled] -> C.LibraryIndex.InstalledLibraryIndex
+exInstIdx = C.LibraryIndex.fromList . map exInstInfo
 
 exResolve :: ExampleDb
           -- List of extensions supported by the compiler, or Nothing if unknown.

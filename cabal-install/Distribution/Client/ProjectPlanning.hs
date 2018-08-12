@@ -121,7 +121,7 @@ import           Distribution.System
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.PackageDescription as PD
 import qualified Distribution.PackageDescription.Configuration as PD
-import           Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import           Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import           Distribution.Simple.Compiler hiding (Flag)
 import qualified Distribution.Simple.GHC   as GHC   --TODO: [code cleanup] eliminate
 import qualified Distribution.Simple.GHCJS as GHCJS --TODO: [code cleanup] eliminate
@@ -722,7 +722,7 @@ programDbSignature progdb =
 getInstalledPackages :: Verbosity
                      -> Compiler -> ProgramDb -> Platform
                      -> PackageDBStack
-                     -> Rebuild InstalledPackageIndex
+                     -> Rebuild InstalledLibraryIndex
 getInstalledPackages verbosity compiler progdb platform packagedbs = do
     monitorFiles . map monitorFileOrDirectory
       =<< liftIO (IndexUtils.getInstalledPackagesMonitorFiles
@@ -737,7 +737,7 @@ getInstalledPackages verbosity compiler progdb platform packagedbs = do
 getPackageDBContents :: Verbosity
                      -> Compiler -> ProgramDb -> Platform
                      -> PackageDB
-                     -> Rebuild InstalledPackageIndex
+                     -> Rebuild InstalledLibraryIndex
 getPackageDBContents verbosity compiler progdb platform packagedb = do
     monitorFiles . map monitorFileOrDirectory
       =<< liftIO (IndexUtils.getInstalledPackagesMonitorFiles
@@ -920,7 +920,7 @@ planPackages :: Verbosity
              -> Compiler
              -> Platform
              -> Solver -> SolverSettings
-             -> InstalledPackageIndex
+             -> InstalledLibraryIndex
              -> SourcePackageDb
              -> PkgConfigDb
              -> [PackageSpecifier UnresolvedSourcePackage]
@@ -1981,10 +1981,7 @@ matchPlanPkg p = InstallPlan.foldPlanPackage (p . ipiComponentName) (matchElabPk
 -- | Get the appropriate 'ComponentName' which identifies an installed
 -- component.
 ipiComponentName :: IPI.InstalledPackageInfo -> ComponentName
-ipiComponentName ipkg =
-    case IPI.sourceLibName ipkg of
-        Nothing -> CLibName LMainLibName
-        Just n  -> CLibName (LSubLibName n)
+ipiComponentName ipkg = CLibName $ IPI.sourceLibName ipkg
 
 -- | Given a 'ElaboratedConfiguredPackage', report if it matches a
 -- 'ComponentName'.
@@ -3603,7 +3600,7 @@ packageHashConfigInputs shared@ElaboratedSharedConfig{..} pkg =
   where
     ElaboratedConfiguredPackage{..} = normaliseConfiguredPackage shared pkg
 
--- | Given the 'InstalledPackageIndex' for a nix-style package store, and an
+-- | Given the 'InstalledLibraryIndex' for a nix-style package store, and an
 -- 'ElaboratedInstallPlan', replace configured source packages by installed
 -- packages from the store whenever they exist.
 --
