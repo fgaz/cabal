@@ -16,6 +16,7 @@ import Distribution.Pretty
 import Distribution.Text
 import Distribution.Types.PackageName
 import Distribution.Types.UnqualComponentName
+import Distribution.Types.LibraryName
 
 import qualified Distribution.Compat.ReadP       as Parse
 import qualified Text.PrettyPrint                as Disp
@@ -96,23 +97,23 @@ instance NFData MungedPackageName where
 -- When we have the public library, the compat-pkg-name is just the
 -- package-name, no surprises there!
 --
-computeCompatPackageName :: PackageName -> Maybe UnqualComponentName -> MungedPackageName
+computeCompatPackageName :: PackageName -> LibraryName -> MungedPackageName
 -- First handle the cases where we can just use the original 'PackageName'.
 -- This is for the PRIMARY library, and it is non-Backpack, or the
 -- indefinite package for us.
-computeCompatPackageName pkg_name Nothing
+computeCompatPackageName pkg_name LMainLibName
     = mkMungedPackageName $ unPackageName pkg_name
-computeCompatPackageName pkg_name (Just uqn)
+computeCompatPackageName pkg_name (LSubLibName uqn)
     = mkMungedPackageName $
          "z-" ++ zdashcode (unPackageName pkg_name) ++
         "-z-" ++ zdashcode (unUnqualComponentName uqn)
 
-decodeCompatPackageName :: MungedPackageName -> (PackageName, Maybe UnqualComponentName)
+decodeCompatPackageName :: MungedPackageName -> (PackageName, LibraryName)
 decodeCompatPackageName m =
     case unMungedPackageName m of
         'z':'-':rest | [([pn, cn], "")] <- Parse.readP_to_S parseZDashCode rest
-            -> (mkPackageName pn, Just (mkUnqualComponentName cn))
-        s   -> (mkPackageName s, Nothing)
+            -> (mkPackageName pn, LSubLibName (mkUnqualComponentName cn))
+        s   -> (mkPackageName s, LMainLibName)
 
 zdashcode :: String -> String
 zdashcode s = go s (Nothing :: Maybe Int) []

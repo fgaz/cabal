@@ -84,8 +84,8 @@ import Distribution.Simple.Compiler
   ( PackageDBStack, Compiler )
 import Distribution.Simple.Program
   ( ProgramDb )
-import Distribution.Simple.PackageIndex
-  ( InstalledPackageIndex, moduleNameIndex )
+import Distribution.Simple.LibraryIndex
+  ( InstalledLibraryIndex, moduleNameIndex )
 import Distribution.Text
   ( display, Text(..) )
 
@@ -132,7 +132,7 @@ initCabal verbosity packageDBs repoCtxt comp progdb initFlags = do
 
 -- | Fill in more details by guessing, discovering, or prompting the
 --   user.
-extendFlags :: InstalledPackageIndex -> SourcePackageDb -> InitFlags -> IO InitFlags
+extendFlags :: InstalledLibraryIndex -> SourcePackageDb -> InitFlags -> IO InitFlags
 extendFlags pkgIx sourcePkgDb =
       getPackageName sourcePkgDb
   >=> getVersion
@@ -403,7 +403,7 @@ isSourceFile Nothing        sf = isSourceFile (Just ["."]) sf
 isSourceFile (Just srcDirs) sf = any (equalFilePath (relativeSourcePath sf)) srcDirs
 
 -- | Get the list of exposed modules and extra tools needed to build them.
-getModulesBuildToolsAndDeps :: InstalledPackageIndex -> InitFlags -> IO InitFlags
+getModulesBuildToolsAndDeps :: InstalledLibraryIndex -> InitFlags -> IO InitFlags
 getModulesBuildToolsAndDeps pkgIx flags = do
   dir <- maybe getCurrentDirectory return . flagToMaybe $ packageDir flags
 
@@ -438,7 +438,7 @@ getModulesBuildToolsAndDeps pkgIx flags = do
                  , otherExts      = exts
                  }
 
-importsToDeps :: InitFlags -> [ModuleName] -> InstalledPackageIndex -> IO [P.Dependency]
+importsToDeps :: InitFlags -> [ModuleName] -> InstalledLibraryIndex -> IO [P.Dependency]
 importsToDeps flags mods pkgIx = do
 
   let modMap :: M.Map ModuleName [InstalledPackageInfo]

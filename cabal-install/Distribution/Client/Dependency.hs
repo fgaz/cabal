@@ -67,8 +67,8 @@ module Distribution.Client.Dependency (
 
 import Distribution.Solver.Modular
          ( modularResolver, SolverConfig(..), PruneAfterFirstSuccess(..) )
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
-import qualified Distribution.Simple.PackageIndex as InstalledPackageIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
+import qualified Distribution.Simple.LibraryIndex as InstalledLibraryIndex
 import Distribution.Client.SolverInstallPlan (SolverInstallPlan)
 import qualified Distribution.Client.SolverInstallPlan as SolverInstallPlan
 import Distribution.Client.Types
@@ -154,7 +154,7 @@ data DepResolverParams = DepResolverParams {
        depResolverConstraints       :: [LabeledPackageConstraint],
        depResolverPreferences       :: [PackagePreference],
        depResolverPreferenceDefault :: PackagesPreferenceDefault,
-       depResolverInstalledPkgIndex :: InstalledPackageIndex,
+       depResolverInstalledPkgIndex :: InstalledLibraryIndex,
        depResolverSourcePkgIndex    :: PackageIndex.PackageIndex UnresolvedSourcePackage,
        depResolverReorderGoals      :: ReorderGoals,
        depResolverCountConflicts    :: CountConflicts,
@@ -238,7 +238,7 @@ showPackagePreference (PackageInstalledPreference pn ip) =
 showPackagePreference (PackageStanzasPreference pn st) =
   display pn ++ " " ++ show st
 
-basicDepResolverParams :: InstalledPackageIndex
+basicDepResolverParams :: InstalledLibraryIndex
                        -> PackageIndex.PackageIndex UnresolvedSourcePackage
                        -> DepResolverParams
 basicDepResolverParams installedPkgIndex sourcePkgIndex =
@@ -396,7 +396,7 @@ dontUpgradeNonUpgradeablePackages params =
       , isInstalled pkgname ]
 
     isInstalled = not . null
-                . InstalledPackageIndex.lookupPackageName
+                . InstalledLibraryIndex.lookupPackageName
                                  (depResolverInstalledPkgIndex params)
 
 addSourcePackages :: [UnresolvedSourcePackage]
@@ -415,7 +415,7 @@ hideInstalledPackagesSpecificBySourcePackageId pkgids params =
     --TODO: this should work using exclude constraints instead
     params {
       depResolverInstalledPkgIndex =
-        foldl' (flip InstalledPackageIndex.deleteSourcePackageId)
+        foldl' (flip InstalledLibraryIndex.deleteSourcePackageId)
                (depResolverInstalledPkgIndex params) pkgids
     }
 
@@ -425,7 +425,7 @@ hideInstalledPackagesAllVersions pkgnames params =
     --TODO: this should work using exclude constraints instead
     params {
       depResolverInstalledPkgIndex =
-        foldl' (flip InstalledPackageIndex.deletePackageName)
+        foldl' (flip InstalledLibraryIndex.deletePackageName)
                (depResolverInstalledPkgIndex params) pkgnames
     }
 
@@ -596,7 +596,7 @@ reinstallTargets params =
 
 -- | A basic solver policy on which all others are built.
 --
-basicInstallPolicy :: InstalledPackageIndex
+basicInstallPolicy :: InstalledLibraryIndex
                    -> SourcePackageDb
                    -> [PackageSpecifier UnresolvedSourcePackage]
                    -> DepResolverParams
@@ -629,7 +629,7 @@ basicInstallPolicy
 --
 -- It extends the 'basicInstallPolicy' with a policy on setup deps.
 --
-standardInstallPolicy :: InstalledPackageIndex
+standardInstallPolicy :: InstalledLibraryIndex
                       -> SourcePackageDb
                       -> [PackageSpecifier UnresolvedSourcePackage]
                       -> DepResolverParams
@@ -702,7 +702,7 @@ applySandboxInstallPolicy
 
   where
     installedPkgIds =
-      map fst . InstalledPackageIndex.allPackagesBySourcePackageId
+      map fst . InstalledLibraryIndex.allPackagesBySourcePackageId
       $ allSandboxPkgs
     modifiedPkgIds       = map packageId modifiedDeps
     installedNotModified = [ packageName pkg | pkg <- installedPkgIds,
@@ -1031,7 +1031,7 @@ resolveWithoutDependencies (DepResolverParams targets constraints
         installPref   = case preferInstalled of
           PreferLatest    -> const False
           PreferInstalled -> not . null
-                           . InstalledPackageIndex.lookupSourcePackageId
+                           . InstalledLibraryIndex.lookupSourcePackageId
                                                      installedPkgIndex
                            . packageId
         versionPref pkg = length . filter (packageVersion pkg `withinRange`) $

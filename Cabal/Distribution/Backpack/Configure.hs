@@ -32,8 +32,8 @@ import Distribution.Package
 import qualified Distribution.InstalledPackageInfo as Installed
 import Distribution.InstalledPackageInfo (InstalledPackageInfo
                                          ,emptyInstalledPackageInfo)
-import qualified Distribution.Simple.PackageIndex as PackageIndex
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import Distribution.PackageDescription as PD hiding (Flag)
 import Distribution.ModuleName
 import Distribution.Simple.Setup as Setup
@@ -68,9 +68,9 @@ configureComponentLocalBuildInfos
     -> [PreExistingComponent]
     -> FlagAssignment         -- configConfigurationsFlags
     -> [(ModuleName, Module)] -- configInstantiateWith
-    -> InstalledPackageIndex
+    -> InstalledLibraryIndex
     -> Compiler
-    -> LogProgress ([ComponentLocalBuildInfo], InstalledPackageIndex)
+    -> LogProgress ([ComponentLocalBuildInfo], InstalledLibraryIndex)
 configureComponentLocalBuildInfos
     verbosity use_external_internal_deps enabled deterministic ipid_flag cid_flag pkg_descr
     prePkgDeps flagAssignment instantiate_with installedPackageSet comp = do
@@ -102,7 +102,7 @@ configureComponentLocalBuildInfos
             [ (pc_cid pkg, (pc_open_uid pkg, pc_shape pkg))
             | pkg <- prePkgDeps]
         uid_lookup def_uid
-            | Just pkg <- PackageIndex.lookupUnitId installedPackageSet uid
+            | Just pkg <- LibraryIndex.lookupUnitId installedPackageSet uid
             = FullUnitId (Installed.installedComponentId pkg)
                  (Map.fromList (Installed.instantiatedWith pkg))
             | otherwise = error ("uid_lookup: " ++ display uid)
@@ -119,7 +119,7 @@ configureComponentLocalBuildInfos
             | pkg <- prePkgDeps] ++
             [ (Installed.installedUnitId pkg, mungedId pkg)
             | (_, Module uid _) <- instantiate_with
-            , Just pkg <- [PackageIndex.lookupUnitId
+            , Just pkg <- [LibraryIndex.lookupUnitId
                                 installedPackageSet (unDefUnitId uid)] ]
         subst = Map.fromList instantiate_with
         graph3 = toReadyComponents pid_map subst graph2
@@ -136,12 +136,12 @@ configureComponentLocalBuildInfos
 
 toComponentLocalBuildInfos
     :: Compiler
-    -> InstalledPackageIndex -- FULL set
+    -> InstalledLibraryIndex -- FULL set
     -> PackageDescription
     -> [PreExistingComponent] -- external package deps
     -> [ReadyComponent]
     -> LogProgress ([ComponentLocalBuildInfo],
-                    InstalledPackageIndex) -- only relevant packages
+                    InstalledLibraryIndex) -- only relevant packages
 toComponentLocalBuildInfos
     comp installedPackageSet pkg_descr externalPkgDeps graph = do
     -- Check and make sure that every instantiated component exists.
@@ -155,7 +155,7 @@ toComponentLocalBuildInfos
         external_graph :: Graph (Either InstalledPackageInfo ReadyComponent)
         external_graph = Graph.fromDistinctList
                        . map Left
-                       $ PackageIndex.allPackages installedPackageSet
+                       $ LibraryIndex.allPackages installedPackageSet
         internal_graph :: Graph (Either InstalledPackageInfo ReadyComponent)
         internal_graph = Graph.fromDistinctList
                        . map Right
@@ -174,7 +174,7 @@ toComponentLocalBuildInfos
         --        and other things will incorrectly use it to determine what
         --        the include paths and everything should be.
         --
-        packageDependsIndex = PackageIndex.fromList (lefts local_graph)
+        packageDependsIndex = LibraryIndex.fromList (lefts local_graph)
         fullIndex = Graph.fromDistinctList local_graph
     case Graph.broken fullIndex of
         [] -> return ()
@@ -204,7 +204,7 @@ toComponentLocalBuildInfos
     -- What is pseudoTopPkg for? I have no idea.  It was used
     -- in the very original commit which introduced checking for
     -- inconsistencies 5115bb2be4e13841ea07dc9166b9d9afa5f0d012,
-    -- and then moved out of PackageIndex and put here later.
+    -- and then moved out of LibraryIndex and put here later.
     -- TODO: Try this code without it...
     --
     -- TODO: Move this into a helper function
@@ -216,8 +216,8 @@ toComponentLocalBuildInfos
             Installed.sourcePackageId = packageId pkg_descr,
             Installed.depends = map pc_uid externalPkgDeps
           }
-    case PackageIndex.dependencyInconsistencies
-       . PackageIndex.insert pseudoTopPkg
+    case LibraryIndex.dependencyInconsistencies
+       . LibraryIndex.insert pseudoTopPkg
        $ packageDependsIndex of
       [] -> return ()
       inconsistencies ->

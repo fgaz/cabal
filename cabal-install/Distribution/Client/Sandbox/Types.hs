@@ -15,7 +15,7 @@ module Distribution.Client.Sandbox.Types (
 import Prelude ()
 import Distribution.Client.Compat.Prelude
 
-import qualified Distribution.Simple.PackageIndex as InstalledPackageIndex
+import qualified Distribution.Simple.LibraryIndex as InstalledLibraryIndex
 import Distribution.Client.Types (UnresolvedSourcePackage)
 
 import qualified Data.Set as S
@@ -55,7 +55,7 @@ data SandboxPackageInfo = SandboxPackageInfo {
   -- ^ Remaining add-source deps. Some of these may be not installed in the
   -- sandbox.
 
-  otherInstalledSandboxPackages :: !InstalledPackageIndex.InstalledPackageIndex,
+  otherInstalledSandboxPackages :: !InstalledLibraryIndex.InstalledLibraryIndex,
   -- ^ All packages installed in the sandbox. Intersection with
   -- 'modifiedAddSourceDependencies' and/or 'otherAddSourceDependencies' can be
   -- non-empty.

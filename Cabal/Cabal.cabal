@@ -277,7 +277,7 @@ library
     Distribution.Simple.Install
     Distribution.Simple.InstallDirs
     Distribution.Simple.LocalBuildInfo
-    Distribution.Simple.PackageIndex
+    Distribution.Simple.LibraryIndex
     Distribution.Simple.PreProcess
     Distribution.Simple.PreProcess.Unlit
     Distribution.Simple.Program

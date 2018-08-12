@@ -63,7 +63,7 @@ import qualified Distribution.Simple.GHC   as GHC
 import qualified Distribution.Simple.GHCJS as GHCJS
 import qualified Distribution.Simple.UHC   as UHC
 import qualified Distribution.Simple.HaskellSuite as HaskellSuite
-import qualified Distribution.Simple.PackageIndex as Index
+import qualified Distribution.Simple.LibraryIndex as Index
 
 import Distribution.Backpack.DescribeUnitId
 import Distribution.Simple.Compiler
@@ -80,7 +80,6 @@ import Distribution.Simple.Utils
 import Distribution.Utils.MapAccum
 import Distribution.System
 import Distribution.Text
-import Distribution.Types.ComponentName
 import Distribution.Verbosity as Verbosity
 import Distribution.Version
 import Distribution.Compat.Graph (IsNode(nodeKey))
@@ -113,11 +112,11 @@ register pkg_descr lbi0 flags =
             = neededTargetsInBuildOrder' pkg_descr lbi0 (map nodeKey targets)
 
     (_, ipi_mbs) <-
-        mapAccumM `flip` installedPkgs lbi0 `flip` componentsToRegister $ \index tgt ->
+        mapAccumM `flip` installedLibs lbi0 `flip` componentsToRegister $ \index tgt ->
             case targetComponent tgt of
                 CLib lib -> do
                     let clbi = targetCLBI tgt
-                        lbi = lbi0 { installedPkgs = index }
+                        lbi = lbi0 { installedLibs = index }
                     ipi <- generateOne pkg_descr lib lbi clbi flags
                     return (Index.insert ipi index, Just ipi)
                 _   -> return (index, Nothing)
@@ -157,7 +156,7 @@ registerAll pkg lbi regFlags ipis
       for_ ipis $ \installedPkgInfo ->
         -- Only print the public library's IPI
         when (packageId installedPkgInfo == packageId pkg
-              && IPI.sourceLibName installedPkgInfo == Nothing) $
+              && IPI.sourceLibName installedPkgInfo == LMainLibName) $
           putStrLn (display (IPI.installedUnitId installedPkgInfo))
 
      -- Three different modes:
@@ -167,7 +166,7 @@ registerAll pkg lbi regFlags ipis
        | otherwise             -> do
            for_ ipis $ \ipi -> do
                setupMessage' verbosity "Registering" (packageId pkg)
-                 (libraryComponentName (IPI.sourceLibName ipi))
+                 (CLibName (IPI.sourceLibName ipi))
                  (Just (IPI.instantiatedWith ipi))
                registerPackage verbosity (compiler lbi) (withPrograms lbi)
                                packageDbs ipi HcPkg.defaultRegisterOptions

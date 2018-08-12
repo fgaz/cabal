@@ -22,7 +22,7 @@ import Distribution.Types.AbiDependency
 import Distribution.Types.ExposedModule
 import Distribution.Types.MungedPackageId
 import Distribution.Types.MungedPackageName
-import Distribution.Types.UnqualComponentName
+import Distribution.Types.LibraryName
 import Distribution.Version                   (nullVersion)
 
 import qualified Distribution.Package as Package
@@ -38,7 +38,7 @@ data InstalledPackageInfo
         -- these parts (sourcePackageId, installedUnitId) are
         -- exactly the same as PackageDescription
         sourcePackageId   :: PackageId,
-        sourceLibName     :: Maybe UnqualComponentName,
+        sourceLibName     :: LibraryName,
         installedComponentId_ :: ComponentId,
         installedUnitId   :: UnitId,
         -- INVARIANT: if this package is definite, OpenModule's
@@ -127,7 +127,7 @@ emptyInstalledPackageInfo :: InstalledPackageInfo
 emptyInstalledPackageInfo
    = InstalledPackageInfo {
         sourcePackageId   = PackageIdentifier (mkPackageName "") nullVersion,
-        sourceLibName     = Nothing,
+        sourceLibName     = LMainLibName,
         installedComponentId_ = mkComponentId "",
         installedUnitId   = mkUnitId "",
         instantiatedWith  = [],

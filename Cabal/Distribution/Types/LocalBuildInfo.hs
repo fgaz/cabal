@@ -71,7 +71,7 @@ import Distribution.Simple.InstallDirs hiding (absoluteInstallDirs,
 import Distribution.Simple.Program
 import Distribution.PackageDescription
 import Distribution.Simple.Compiler
-import Distribution.Simple.PackageIndex
+import Distribution.Simple.LibraryIndex
 import Distribution.Simple.Setup
 import Distribution.Text
 import Distribution.System
@@ -114,7 +114,7 @@ data LocalBuildInfo = LocalBuildInfo {
         componentNameMap :: Map ComponentName [ComponentLocalBuildInfo],
                 -- ^ A map from component name to all matching
                 -- components.  These coincide with 'componentGraph'
-        installedPkgs :: InstalledPackageIndex,
+        installedLibs :: InstalledLibraryIndex,
                 -- ^ All the info about the installed packages that the
                 -- current package depends on (directly or indirectly).
                 -- The copy saved on disk does NOT include internal

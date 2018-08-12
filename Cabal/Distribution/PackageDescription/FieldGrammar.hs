@@ -121,7 +121,7 @@ packageDescriptionFieldGrammar = PackageDescription
 
 libraryFieldGrammar
     :: (FieldGrammar g, Applicative (g Library), Applicative (g BuildInfo))
-    => Maybe UnqualComponentName -> g Library Library
+    => LibraryName -> g Library Library
 libraryFieldGrammar n = Library n
     <$> monoidalFieldAla  "exposed-modules"    (alaList' VCat MQuoted) L.exposedModules
     <*> monoidalFieldAla  "reexported-modules" (alaList  CommaVCat)    L.reexportedModules
@@ -129,8 +129,8 @@ libraryFieldGrammar n = Library n
         ^^^ availableSince [2,0] []
     <*> booleanFieldDef   "exposed"                                    L.libExposed True
     <*> blurFieldGrammar L.libBuildInfo buildInfoFieldGrammar
-{-# SPECIALIZE libraryFieldGrammar :: Maybe UnqualComponentName -> ParsecFieldGrammar' Library #-}
-{-# SPECIALIZE libraryFieldGrammar :: Maybe UnqualComponentName -> PrettyFieldGrammar' Library #-}
+{-# SPECIALIZE libraryFieldGrammar :: LibraryName -> ParsecFieldGrammar' Library #-}
+{-# SPECIALIZE libraryFieldGrammar :: LibraryName -> PrettyFieldGrammar' Library #-}
 
 -------------------------------------------------------------------------------
 -- Foreign library

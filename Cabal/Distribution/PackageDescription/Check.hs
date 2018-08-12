@@ -55,6 +55,7 @@ import Distribution.Text
 import Distribution.Types.ComponentRequestedSpec
 import Distribution.Types.CondTree
 import Distribution.Types.ExeDependency
+import Distribution.Types.LibraryName                (libraryNameString)
 import Distribution.Types.UnqualComponentName
 import Distribution.Utils.Generic                    (isAscii)
 import Distribution.Verbosity
@@ -196,7 +197,7 @@ checkSanity pkg =
       PackageBuildImpossible
         "No executables, libraries, tests, or benchmarks found. Nothing to do."
 
-  , check (any isNothing (map libName $ subLibraries pkg)) $
+  , check (any (/=LMainLibName) (map libName $ subLibraries pkg)) $
       PackageBuildImpossible $ "Found one or more unnamed internal libraries. "
         ++ "Only the non-internal library can have the same name as the package."
 
@@ -237,7 +238,7 @@ checkSanity pkg =
     -- The public 'library' gets special dispensation, because it
     -- is common practice to export a library and name the executable
     -- the same as the package.
-    subLibNames = catMaybes . map libName $ subLibraries pkg
+    subLibNames = catMaybes . map (libraryNameString . libName) $ subLibraries pkg
     exeNames = map exeName $ executables pkg
     testNames = map testName $ testSuites pkg
     bmNames = map benchmarkName $ benchmarks pkg
@@ -256,8 +257,8 @@ checkLibrary pkg lib =
   , check (null (explicitLibModules lib) && null (reexportedModules lib)) $
       PackageDistSuspiciousWarn $
            "Library " ++ (case libName lib of
-                            Nothing -> ""
-                            Just n -> display n
+                            LMainLibName -> ""
+                            LSubLibName n -> display n
                             ) ++ "does not expose any modules"
 
     -- check use of signatures sections
@@ -590,8 +591,12 @@ checkFields pkg =
       , isNoVersion vr ]
 
     internalLibraries =
-        map (maybe (packageName pkg) (unqualComponentNameToPackageName) . libName)
-            (allLibraries pkg)
+        fmap
+          (\lib ->
+          case libName lib
+          of LMainLibName -> packageName pkg
+             LSubLibName name -> unqualComponentNameToPackageName name )
+          (allLibraries pkg)
 
     internalExecutables = map exeName $ executables pkg
 

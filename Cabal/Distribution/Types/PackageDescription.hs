@@ -452,7 +452,7 @@ enabledComponents pkg enabled = filter (componentEnabled enabled) $ pkgBuildable
 lookupComponent :: PackageDescription -> ComponentName -> Maybe Component
 lookupComponent pkg (CLibName LMainLibName) = fmap CLib (library pkg)
 lookupComponent pkg (CLibName (LSubLibName name)) =
-    fmap CLib $ find ((Just name ==) . libName) (subLibraries pkg)
+    fmap CLib $ find ((LSubLibName name ==) . libName) (subLibraries pkg)
 lookupComponent pkg (CFLibName name) =
     fmap CFLib $ find ((name ==) . foreignLibName) (foreignLibs pkg)
 lookupComponent pkg (CExeName name) =

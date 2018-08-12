@@ -35,7 +35,7 @@ import Distribution.Package
          ( packageId )
 import Distribution.Simple.Compiler
          ( Compiler, compilerInfo, PackageDBStack )
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import Distribution.Simple.Program
          ( ProgramDb )
 import Distribution.Simple.Setup
@@ -121,7 +121,7 @@ planPackages :: Verbosity
              -> Compiler
              -> Platform
              -> FetchFlags
-             -> InstalledPackageIndex
+             -> InstalledLibraryIndex
              -> SourcePackageDb
              -> PkgConfigDb
              -> [PackageSpecifier UnresolvedSourcePackage]

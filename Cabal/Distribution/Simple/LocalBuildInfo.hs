@@ -88,7 +88,7 @@ import qualified Distribution.InstalledPackageInfo as Installed
 import Distribution.Package
 import Distribution.ModuleName
 import Distribution.Simple.Compiler
-import Distribution.Simple.PackageIndex
+import Distribution.Simple.LibraryIndex
 import Distribution.Simple.Utils
 import Distribution.Text
 import qualified Distribution.Compat.Graph as Graph
@@ -274,15 +274,15 @@ depLibraryPaths inplace relative lbi clbi = do
           | otherwise  = dynlibdir (absoluteComponentInstallDirs pkgDescr lbi (componentUnitId sub_clbi) NoCopyDest)
 
     -- Why do we go through all the trouble of a hand-crafting
-    -- internalLibs, when 'installedPkgs' actually contains the
-    -- internal libraries?  The trouble is that 'installedPkgs'
+    -- internalLibs, when 'installedLibs' actually contains the
+    -- internal libraries?  The trouble is that 'installedLibs'
     -- may contain *inplace* entries, which we must NOT use for
     -- not inplace 'depLibraryPaths' (e.g., for RPATH calculation).
     -- See #4025 for more details. This is all horrible but it
     -- is a moot point if you are using a per-component build,
     -- because you never have any internal libraries in this case;
     -- they're all external.
-    let external_ipkgs = filter is_external (allPackages (installedPkgs lbi))
+    let external_ipkgs = filter is_external (allPackages (installedLibs lbi))
         is_external ipkg = not (installedUnitId ipkg `elem` internalDeps)
         -- First look for dynamic libraries in `dynamic-library-dirs`, and use
         -- `library-dirs` as a fall back.

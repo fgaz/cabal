@@ -27,15 +27,15 @@ import Distribution.Simple.Program (haddockProgram, ProgramDb
                                    , runProgram, requireProgramVersion)
 import Distribution.Version (mkVersion, orLaterVersion)
 import Distribution.Verbosity (Verbosity)
-import Distribution.Simple.PackageIndex
-         ( InstalledPackageIndex, allPackagesByName )
+import Distribution.Simple.LibraryIndex
+         ( InstalledLibraryIndex, allPackagesByName )
 import Distribution.Simple.Utils
          ( comparing, debug, installDirectoryContents, withTempDirectory )
 import Distribution.InstalledPackageInfo as InstalledPackageInfo
          ( InstalledPackageInfo(exposed) )
 
 regenerateHaddockIndex :: Verbosity
-                       -> InstalledPackageIndex -> ProgramDb
+                       -> InstalledLibraryIndex -> ProgramDb
                        -> FilePath
                        -> IO ()
 regenerateHaddockIndex verbosity pkgs progdb index = do

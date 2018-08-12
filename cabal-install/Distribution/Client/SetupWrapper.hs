@@ -70,8 +70,8 @@ import Distribution.Simple.Command
          ( CommandUI(..), commandShowOptions )
 import Distribution.Simple.Program.GHC
          ( GhcMode(..), GhcOptions(..), renderGhcOptions )
-import qualified Distribution.Simple.PackageIndex as PackageIndex
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import qualified Distribution.InstalledPackageInfo as IPI
 import Distribution.Client.Types
 import Distribution.Client.Config
@@ -181,7 +181,7 @@ data SetupScriptOptions = SetupScriptOptions {
     useCompiler              :: Maybe Compiler,
     usePlatform              :: Maybe Platform,
     usePackageDB             :: PackageDBStack,
-    usePackageIndex          :: Maybe InstalledPackageIndex,
+    usePackageIndex          :: Maybe InstalledLibraryIndex,
     useProgramDb             :: ProgramDb,
     useDistPref              :: FilePath,
     useLoggingHandle         :: Maybe Handle,
@@ -600,7 +600,7 @@ getExternalSetupMethod verbosity options pkg bt = do
   useCachedSetupExecutable = (bt == Simple || bt == Configure || bt == Make)
 
   maybeGetInstalledPackages :: SetupScriptOptions -> Compiler
-                            -> ProgramDb -> IO InstalledPackageIndex
+                            -> ProgramDb -> IO InstalledLibraryIndex
   maybeGetInstalledPackages options' comp progdb =
     case usePackageIndex options' of
       Just index -> return index
@@ -722,7 +722,7 @@ getExternalSetupMethod verbosity options pkg bt = do
     let cabalDep   = Dependency (mkPackageName "Cabal")
                                 (useCabalVersion options')
         options''  = options' { usePackageIndex = Just index }
-    case PackageIndex.lookupDependency index cabalDep of
+    case LibraryIndex.lookupDependency index cabalDep of
       []   -> die' verbosity $ "The package '" ++ display (packageName pkg)
                  ++ "' requires Cabal library version "
                  ++ display (useCabalVersion options)

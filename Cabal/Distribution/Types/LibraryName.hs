@@ -14,18 +14,21 @@ import Prelude ()
 import Distribution.Compat.Prelude
 
 import qualified Distribution.Compat.ReadP as Parse
+import qualified Distribution.Compat.CharParsing as P
 import Distribution.Compat.ReadP   ((<++))
 import Distribution.Types.UnqualComponentName
 import Distribution.Pretty
 import Distribution.Text
+import Distribution.Parsec.Class
 
 import Text.PrettyPrint as Disp
 
 data LibraryName = LMainLibName
                  | LSubLibName UnqualComponentName
-                 deriving (Eq, Generic, Ord, Read, Show, Typeable)
+                 deriving (Eq, Generic, Ord, Read, Show, Typeable, Data)
 
 instance Binary LibraryName
+instance NFData LibraryName
 
 -- Build-target-ish syntax
 instance Pretty LibraryName where
@@ -39,6 +42,14 @@ instance Text LibraryName where
       parseComposite = do
         ctor <- Parse.string "lib:" >> return LSubLibName
         ctor <$> parse
+
+instance Parsec LibraryName where
+    parsec = P.try parseComposite <|> parseSingle
+     where
+      parseSingle = P.string "lib" >> return LMainLibName
+      parseComposite = do
+        ctor <- P.string "lib:" >> return LSubLibName
+        ctor <$> parsec
 
 defaultLibName :: LibraryName
 defaultLibName = LMainLibName

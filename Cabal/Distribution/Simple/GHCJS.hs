@@ -25,8 +25,8 @@ import Distribution.Simple.GHC.ImplInfo
 import qualified Distribution.Simple.GHC.Internal as Internal
 import Distribution.PackageDescription as PD
 import Distribution.InstalledPackageInfo
-import Distribution.Simple.PackageIndex ( InstalledPackageIndex )
-import qualified Distribution.Simple.PackageIndex as PackageIndex
+import Distribution.Simple.LibraryIndex ( InstalledLibraryIndex )
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
 import Distribution.Simple.LocalBuildInfo
 import qualified Distribution.Simple.Hpc as Hpc
 import Distribution.Simple.BuildPaths
@@ -180,31 +180,31 @@ guessToolFromGhcjsPath tool ghcjsProg verbosity searchpath
 
 -- | Given a single package DB, return all installed packages.
 getPackageDBContents :: Verbosity -> PackageDB -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getPackageDBContents verbosity packagedb progdb = do
   pkgss <- getInstalledPackages' verbosity [packagedb] progdb
-  toPackageIndex verbosity pkgss progdb
+  toLibraryIndex verbosity pkgss progdb
 
 -- | Given a package DB stack, return all installed packages.
 getInstalledPackages :: Verbosity -> PackageDBStack -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getInstalledPackages verbosity packagedbs progdb = do
   checkPackageDbEnvVar verbosity
   checkPackageDbStack verbosity packagedbs
   pkgss <- getInstalledPackages' verbosity packagedbs progdb
-  index <- toPackageIndex verbosity pkgss progdb
+  index <- toLibraryIndex verbosity pkgss progdb
   return $! index
 
-toPackageIndex :: Verbosity
+toLibraryIndex :: Verbosity
                -> [(PackageDB, [InstalledPackageInfo])]
                -> ProgramDb
-               -> IO InstalledPackageIndex
-toPackageIndex verbosity pkgss progdb = do
+               -> IO InstalledLibraryIndex
+toLibraryIndex verbosity pkgss progdb = do
   -- On Windows, various fields have $topdir/foo rather than full
   -- paths. We need to substitute the right value in so that when
   -- we, for example, call gcc, we have proper paths to give it.
   topDir <- getLibDir' verbosity ghcjsProg
-  let indices = [ PackageIndex.fromList (map (Internal.substTopDir topDir) pkgs)
+  let indices = [ LibraryIndex.fromList (map (Internal.substTopDir topDir) pkgs)
                 | (_, pkgs) <- pkgss ]
   return $! (mconcat indices)
 

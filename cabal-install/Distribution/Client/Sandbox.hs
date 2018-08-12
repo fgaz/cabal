@@ -104,8 +104,8 @@ import Distribution.Verbosity                 ( Verbosity )
 import Distribution.Compat.Environment        ( lookupEnv, setEnv )
 import Distribution.Client.Compat.FilePerms   ( setFileHidden )
 import qualified Distribution.Client.Sandbox.Index as Index
-import Distribution.Simple.PackageIndex       ( InstalledPackageIndex )
-import qualified Distribution.Simple.PackageIndex  as InstalledPackageIndex
+import Distribution.Simple.LibraryIndex       ( InstalledLibraryIndex )
+import qualified Distribution.Simple.LibraryIndex  as InstalledLibraryIndex
 import qualified Distribution.Simple.Register      as Register
 
 import Distribution.Solver.Types.SourcePackage
@@ -246,7 +246,7 @@ getSandboxPackageDB verbosity configFlags = do
 -- | Which packages are installed in the sandbox package DB?
 getInstalledPackagesInSandbox :: Verbosity -> ConfigFlags
                                  -> Compiler -> ProgramDb
-                                 -> IO InstalledPackageIndex
+                                 -> IO InstalledLibraryIndex
 getInstalledPackagesInSandbox verbosity configFlags comp progdb = do
     sandboxDB <- getSandboxPackageDB verbosity configFlags
     getPackageDBContents verbosity comp sandboxDB progdb
@@ -739,7 +739,7 @@ withSandboxPackageInfo verbosity configFlags globalFlags
   depsPkgDescs   <- mapM (readGenericPackageDescription verbosity) depsCabalFiles
   let depsMap           = M.fromList (zip buildTreeRefs depsPkgDescs)
       isInstalled pkgid = not . null
-        . InstalledPackageIndex.lookupSourcePackageId installedPkgIndex $ pkgid
+        . InstalledLibraryIndex.lookupSourcePackageId installedPkgIndex $ pkgid
       installedDepsMap  = M.filter (isInstalled . packageId) depsMap
 
   -- Get the package ids of modified (and installed) add-source deps.

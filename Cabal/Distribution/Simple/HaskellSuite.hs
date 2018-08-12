@@ -17,7 +17,7 @@ import Distribution.Version
 import Distribution.Text
 import Distribution.Package
 import Distribution.InstalledPackageInfo hiding (includeDirs)
-import Distribution.Simple.PackageIndex as PackageIndex
+import Distribution.Simple.LibraryIndex as LibraryIndex
 import Distribution.PackageDescription
 import Distribution.Simple.LocalBuildInfo
 import Distribution.System (Platform)
@@ -121,9 +121,9 @@ getLanguages verbosity prog = do
 -- Other compilers do some kind of a packagedb stack check here. Not sure
 -- if we need something like that as well.
 getInstalledPackages :: Verbosity -> PackageDBStack -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getInstalledPackages verbosity packagedbs progdb =
-  liftM (PackageIndex.fromList . concat) $ for packagedbs $ \packagedb ->
+  liftM (LibraryIndex.fromList . concat) $ for packagedbs $ \packagedb ->
     do str <-
         getDbProgramOutput verbosity haskellSuitePkgProgram progdb
                 ["dump", packageDbOpt packagedb]

@@ -55,7 +55,7 @@ import Distribution.Simple.LocalBuildInfo hiding (substPathTemplate)
 import Distribution.Simple.BuildPaths
 import Distribution.Simple.Register
 import qualified Distribution.Simple.Program.HcPkg as HcPkg
-import qualified Distribution.Simple.PackageIndex as PackageIndex
+import qualified Distribution.Simple.LibraryIndex as LibraryIndex
 import qualified Distribution.InstalledPackageInfo as InstalledPackageInfo
 import Distribution.InstalledPackageInfo ( InstalledPackageInfo )
 import Distribution.Simple.Utils
@@ -228,7 +228,7 @@ haddock pkg_descr lbi suffixes flags' = do
     internalPackageDB <-
       createInternalPackageDB verbosity lbi (flag haddockDistPref)
 
-    (\f -> foldM_ f (installedPkgs lbi) targets') $ \index target -> do
+    (\f -> foldM_ f (installedLibs lbi) targets') $ \index target -> do
 
       let component = targetComponent target
           clbi      = targetCLBI target
@@ -238,7 +238,7 @@ haddock pkg_descr lbi suffixes flags' = do
       let
         lbi' = lbi {
           withPackageDB = withPackageDB lbi ++ [internalPackageDB],
-          installedPkgs = index
+          installedLibs = index
           }
 
       preprocessComponent pkg_descr component lbi' clbi False verbosity suffixes
@@ -273,7 +273,7 @@ haddock pkg_descr lbi suffixes flags' = do
               runHaddock verbosity tmpFileOpts comp platform haddockProg libArgs'
 
               case libName lib of
-                Just _ -> do
+                LSubLibName _ -> do
                   pwd <- getCurrentDirectory
 
                   let
@@ -290,8 +290,8 @@ haddock pkg_descr lbi suffixes flags' = do
                       HcPkg.registerMultiInstance = True
                     }
 
-                  return $ PackageIndex.insert ipi index
-                Nothing ->
+                  return $ LibraryIndex.insert ipi index
+                LMainLibName ->
                   pure index
 
         CFLib flib -> (when (flag haddockForeignLibs) $ do
@@ -765,13 +765,13 @@ haddockPackageFlags :: Verbosity
                                               -- missing documentation
                           )
 haddockPackageFlags verbosity lbi clbi htmlTemplate = do
-  let allPkgs = installedPkgs lbi
+  let allLibs = installedLibs lbi
       directDeps = map fst (componentPackageDeps clbi)
-  transitiveDeps <- case PackageIndex.dependencyClosure allPkgs directDeps of
+  transitiveDeps <- case LibraryIndex.dependencyClosure allLibs directDeps of
     Left x    -> return x
     Right inf -> die' verbosity $ "internal error when calculating transitive "
                     ++ "package dependencies.\nDebug info: " ++ show inf
-  haddockPackagePaths (PackageIndex.allPackages transitiveDeps) mkHtmlPath
+  haddockPackagePaths (LibraryIndex.allPackages transitiveDeps) mkHtmlPath
     where
       mkHtmlPath                  = fmap expandTemplateVars htmlTemplate
       expandTemplateVars tmpl pkg =

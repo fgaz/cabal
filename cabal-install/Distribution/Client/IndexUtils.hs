@@ -55,7 +55,7 @@ import Distribution.Package
          ( PackageId, PackageIdentifier(..), mkPackageName
          , Package(..), packageVersion, packageName )
 import Distribution.Types.Dependency
-import Distribution.Simple.PackageIndex (InstalledPackageIndex)
+import Distribution.Simple.LibraryIndex (InstalledLibraryIndex)
 import Distribution.PackageDescription
          ( GenericPackageDescription(..)
          , PackageDescription(..), emptyPackageDescription )
@@ -111,7 +111,7 @@ import qualified Hackage.Security.Util.Some as Sec
 -- | Reduced-verbosity version of 'Configure.getInstalledPackages'
 getInstalledPackages :: Verbosity -> Compiler
                      -> PackageDBStack -> ProgramDb
-                     -> IO InstalledPackageIndex
+                     -> IO InstalledLibraryIndex
 getInstalledPackages verbosity comp packageDbs progdb =
     Configure.getInstalledPackages verbosity' comp packageDbs progdb
   where
