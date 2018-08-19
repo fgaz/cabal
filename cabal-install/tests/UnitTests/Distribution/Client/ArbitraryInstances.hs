@@ -124,7 +124,8 @@ instance Arbitrary Dependency where
     arbitrary = Dependency <$> arbitrary <*> arbitrary <*> arbitrary
 
 instance Arbitrary UnqualComponentName where
-    arbitrary = mkUnqualComponentName <$> arbitrary
+    -- same rules as package names
+    arbitrary = packageNameToUnqualComponentName <$> arbitrary
 
 instance Arbitrary LibraryName where
     arbitrary = elements =<< sequenceA [LSubLibName <$> arbitrary, pure LMainLibName]
