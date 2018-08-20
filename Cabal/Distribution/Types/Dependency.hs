@@ -64,7 +64,7 @@ instance Parsec Dependency where
     parsec = do
         name <- lexemeParsec
         libs <- option [LMainLibName]
-              $ (char ':' *> spaces >>)
+              $ (char ':' *> spaces *>)
               $ between (char '{' *> spaces) (spaces <* char '}')
               $ parsecCommaList (makeLib name <$> parsecUnqualComponentName)
         ver  <- parsec <|> pure anyVersion
@@ -76,7 +76,7 @@ instance Text Dependency where
   parse = do name <- parse
              Parse.skipSpaces
              libs <- option [LMainLibName]
-                   $ (char ':' >>)
+                   $ (char ':' *>)
                    $ between (char '{') (char '}')
                    $ parsecCommaList (makeLib name <$> parsecUnqualComponentName)
              Parse.skipSpaces
