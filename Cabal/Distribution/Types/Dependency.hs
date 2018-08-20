@@ -23,7 +23,7 @@ import Distribution.Text
 import Distribution.Pretty
 import qualified Text.PrettyPrint as PP
 import Distribution.Parsec.Class
-import Distribution.Compat.CharParsing (char)
+import Distribution.Compat.CharParsing (char, spaces)
 import Distribution.Compat.Parsing (between, option)
 import Distribution.Types.PackageId
 import Distribution.Types.PackageName
@@ -63,11 +63,11 @@ instance Pretty Dependency where
 instance Parsec Dependency where
     parsec = do
         name <- lexemeParsec
-        ver  <- parsec <|> pure anyVersion
         libs <- option [LMainLibName]
-              $ (char ':' >>)
-              $ between (char '{') (char '}')
+              $ (char ':' *> spaces >>)
+              $ between (char '{' *> spaces) (spaces <* char '}')
               $ parsecCommaList (makeLib name <$> parsecUnqualComponentName)
+        ver  <- parsec <|> pure anyVersion
         return $ Dependency name ver $ Set.fromList libs
       where makeLib pn ln | unPackageName pn == ln = LMainLibName
                           | otherwise = LSubLibName $ mkUnqualComponentName ln
@@ -75,12 +75,12 @@ instance Parsec Dependency where
 instance Text Dependency where
   parse = do name <- parse
              Parse.skipSpaces
-             ver <- parse Parse.<++ return anyVersion
-             Parse.skipSpaces
              libs <- option [LMainLibName]
                    $ (char ':' >>)
                    $ between (char '{') (char '}')
                    $ parsecCommaList (makeLib name <$> parsecUnqualComponentName)
+             Parse.skipSpaces
+             ver <- parse Parse.<++ return anyVersion
              Parse.skipSpaces
              return $ Dependency name ver $ Set.fromList libs
     where makeLib pn ln | unPackageName pn == ln = LMainLibName
