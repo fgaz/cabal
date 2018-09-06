@@ -110,12 +110,12 @@ import Distribution.Simple.InstallDirs
 import Distribution.Version
          ( Version, mkVersion )
 import Distribution.Package
-         ( PackageName, mkPackageName )
+         ( PackageName )
 import Distribution.Types.Dependency
 import Distribution.Types.GivenComponent
          ( GivenComponent(..) )
 import Distribution.Types.UnqualComponentName
-         ( unUnqualComponentName )
+         ( unqualComponentNameToPackageName )
 import Distribution.PackageDescription
          ( BuildType(..), RepoKind(..), LibraryName(..) )
 import Distribution.System ( Platform )
@@ -529,12 +529,13 @@ filterConfigureFlags flags cabalLibVersion
       }
 
     flags_2_5_0 = flags_latest {
-      -- Cabal < 2.5.0 does not understand --dependency=pkg:COMPONENT=cid
-      --                                   (public sublibraries)
+      -- Cabal < 2.5.0 does not understand --dependency=pkg:component=cid
+      -- (public sublibraries), so we convert it to the legacy
+      -- --dependency=pkg_or_internal_compoent=cid
       configDependencies =
         let convertToLegacyInternalDep (GivenComponent _ (LSubLibName cn) cid) =
               Just $ GivenComponent
-                       (mkPackageName $ unUnqualComponentName cn)
+                       (unqualComponentNameToPackageName cn)
                        LMainLibName
                        cid
             convertToLegacyInternalDep (GivenComponent pn LMainLibName cid) =
