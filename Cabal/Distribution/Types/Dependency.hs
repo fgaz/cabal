@@ -53,12 +53,16 @@ instance NFData Dependency where rnf = genericRnf
 
 instance Pretty Dependency where
     pretty (Dependency name ver sublibs) = pretty name
-                                       <+> PP.text ":{" <+> prettySublibs <+> PP.text "}"
+                                       <+> optionalMonoid
+                                             (sublibs /= Set.singleton LMainLibName)
+                                             (PP.colon <+> PP.braces prettySublibs)
                                        <+> pretty ver
       where
-        prettySublibs = PP.text $ concat $ intersperse "," $ showSublib <$> Set.toList sublibs
-        showSublib LMainLibName = unPackageName name
-        showSublib (LSubLibName un) = unUnqualComponentName un
+        optionalMonoid True x = x
+        optionalMonoid False _ = mempty
+        prettySublibs = PP.hsep $ PP.punctuate PP.comma $ prettySublib <$> Set.toList sublibs
+        prettySublib LMainLibName = PP.text $ unPackageName name
+        prettySublib (LSubLibName un) = PP.text $ unUnqualComponentName un
 
 instance Parsec Dependency where
     parsec = do
