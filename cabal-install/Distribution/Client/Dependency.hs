@@ -225,7 +225,6 @@ data PackagePreference =
      -- | If we would prefer to enable these optional stanzas
      -- (i.e. test suites and/or benchmarks)
    | PackageStanzasPreference   PackageName [OptionalStanza]
-   --TODO sublibrary preference
 
 
 -- | Provide a textual representation of a package preference
