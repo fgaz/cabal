@@ -22,6 +22,7 @@ import Distribution.Compat.Binary      (Binary(..))
 import Distribution.Package            (PackageName)
 import Distribution.PackageDescription (FlagAssignment, dispFlagAssignment)
 import Distribution.Types.Dependency   (Dependency(..))
+import Distribution.Types.LibraryName  (LibraryName(..))
 import Distribution.Version            (VersionRange, simplifyVersionRange)
 
 import Distribution.Solver.Compat.Prelude ((<<>>))
@@ -32,6 +33,7 @@ import Distribution.Text                  (disp, flatStyle)
 import GHC.Generics                       (Generic)
 import Text.PrettyPrint                   ((<+>))
 import qualified Text.PrettyPrint as Disp
+import qualified Data.Set as Set
 
 
 -- | Determines to what packages and in what contexts a
@@ -140,12 +142,11 @@ showPackageConstraint pc@(PackageConstraint scope prop) =
       _ -> id
 
 -- | Lossily convert a 'PackageConstraint' to a 'Dependency'.
--- TODO why isn't this in Distribution/Client/Outdated?
 packageConstraintToDependency :: PackageConstraint -> Maybe Dependency
 packageConstraintToDependency (PackageConstraint scope prop) = toDep prop
   where
     toDep (PackagePropertyVersion vr) = 
-        Just $ Dependency (scopeToPackageName scope) vr mempty
+        Just $ Dependency (scopeToPackageName scope) vr (Set.singleton LMainLibName)
     toDep (PackagePropertyInstalled)  = Nothing
     toDep (PackagePropertySource)     = Nothing
     toDep (PackagePropertyFlags _)    = Nothing
