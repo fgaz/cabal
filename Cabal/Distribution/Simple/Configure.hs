@@ -931,7 +931,7 @@ dependencySatisfiable
            | otherwise
            -- Reinterpret the "package name" as an unqualified component
            -- name
-           = Just (mkUnqualComponentName (unPackageName depName))
+           = Just $ packageNameToUnqualComponentName depName
 
 -- | Finalize a generic package description.  The workhorse is
 -- 'finalizePD' but there's a bit of other nattering
