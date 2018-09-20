@@ -54,6 +54,7 @@ import Distribution.Package
          ( Package(..), PackageName, unPackageName, mkPackageName
          , PackageIdentifier(..), packageName, packageVersion )
 import Distribution.Types.Dependency
+import Distribution.Types.LibraryName
 import Distribution.Client.Types
          ( PackageLocation(..), ResolvedPkgLoc, UnresolvedSourcePackage
          , PackageSpecifier(..) )
@@ -91,6 +92,7 @@ import Distribution.PackageDescription.Parsec
 import Data.Either
          ( partitionEithers )
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.ByteString.Lazy as BS
 import qualified Distribution.Client.GZipUtils as GZipUtils
 import Control.Monad (mapM)
@@ -255,8 +257,8 @@ readUserTarget targetstr =
       where
         pkgidToDependency :: PackageIdentifier -> Dependency
         pkgidToDependency p = case packageVersion p of
-          v | v == nullVersion -> Dependency (packageName p) anyVersion mempty
-            | otherwise        -> Dependency (packageName p) (thisVersion v) mempty
+          v | v == nullVersion -> Dependency (packageName p) anyVersion (Set.singleton LMainLibName)
+            | otherwise        -> Dependency (packageName p) (thisVersion v) (Set.singleton LMainLibName)
 
 
 reportUserTargetProblems :: Verbosity -> [UserTargetProblem] -> IO ()

@@ -646,7 +646,7 @@ standardInstallPolicy installedPkgIndex sourcePkgDb pkgSpecifiers
       mkDefaultSetupDeps :: UnresolvedSourcePackage -> Maybe [Dependency]
       mkDefaultSetupDeps srcpkg | affected        =
         Just [Dependency (mkPackageName "Cabal")
-              (orLaterVersion $ mkVersion [1,24]) mempty]
+              (orLaterVersion $ mkVersion [1,24]) (Set.singleton PD.LMainLibName)]
                                 | otherwise       = Nothing
         where
           gpkgdesc = packageDescription srcpkg

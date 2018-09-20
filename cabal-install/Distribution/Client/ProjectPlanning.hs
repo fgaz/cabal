@@ -3002,9 +3002,9 @@ defaultSetupDeps compiler platform pkg =
       -- of other packages.
       SetupCustomImplicitDeps ->
         Just $
-        [ Dependency depPkgname anyVersion mempty
+        [ Dependency depPkgname anyVersion (Set.singleton LMainLibName)
         | depPkgname <- legacyCustomSetupPkgs compiler platform ] ++
-        [ Dependency cabalPkgname cabalConstraint mempty
+        [ Dependency cabalPkgname cabalConstraint (Set.singleton LMainLibName)
         | packageName pkg /= cabalPkgname ]
         where
           -- The Cabal dep is slightly special:
@@ -3027,8 +3027,8 @@ defaultSetupDeps compiler platform pkg =
       -- external Setup.hs, it'll be one of the simple ones that only depends
       -- on Cabal and base.
       SetupNonCustomExternalLib ->
-        Just [ Dependency cabalPkgname cabalConstraint mempty
-             , Dependency basePkgname  anyVersion mempty]
+        Just [ Dependency cabalPkgname cabalConstraint (Set.singleton LMainLibName)
+             , Dependency basePkgname  anyVersion (Set.singleton LMainLibName)]
         where
           cabalConstraint = orLaterVersion (PD.specVersion pkg)
 

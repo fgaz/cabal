@@ -545,7 +545,7 @@ exAvSrcPkg ex =
            }
 
     mkDirect :: (ExamplePkgName, C.VersionRange) -> C.Dependency
-    mkDirect (dep, vr) = C.Dependency (C.mkPackageName dep) vr mempty
+    mkDirect (dep, vr) = C.Dependency (C.mkPackageName dep) vr (Set.singleton LMainLibName)
 
     mkFlagged :: (ExampleFlagName, Dependencies, Dependencies)
               -> DependencyComponent C.BuildInfo
