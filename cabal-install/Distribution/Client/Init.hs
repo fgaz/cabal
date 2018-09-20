@@ -40,6 +40,7 @@ import Data.List
 import Data.Function
   ( on )
 import qualified Data.Map as M
+import qualified Data.Set as Set
 import Control.Monad
   ( (>=>), join, forM_, mapM, mapM_ )
 import Control.Arrow
@@ -57,6 +58,8 @@ import Distribution.ModuleName
 import Distribution.InstalledPackageInfo
   ( InstalledPackageInfo, exposed )
 import qualified Distribution.Package as P
+import Distribution.Types.LibraryName
+  ( LibraryName(..) )
 import Language.Haskell.Extension ( Language(..) )
 
 import Distribution.Client.Init.Types
@@ -484,14 +487,14 @@ chooseDep flags (m, Just ps)
     toDep :: [P.PackageIdentifier] -> IO P.Dependency
 
     -- If only one version, easy.  We change e.g. 0.4.2  into  0.4.*
-    toDep [pid] = return $ P.Dependency (P.pkgName pid) (pvpize . P.pkgVersion $ pid) mempty --TODO take into account sublibraries
+    toDep [pid] = return $ P.Dependency (P.pkgName pid) (pvpize . P.pkgVersion $ pid) (Set.singleton LMainLibName) --TODO sublibraries
 
     -- Otherwise, choose the latest version and issue a warning.
     toDep pids  = do
       message flags ("\nWarning: multiple versions of " ++ display (P.pkgName . head $ pids) ++ " provide " ++ display m ++ ", choosing the latest.")
       return $ P.Dependency (P.pkgName . head $ pids)
                             (pvpize . maximum . map P.pkgVersion $ pids)
-                            mempty --TODO take into account sublibraries
+                            (Set.singleton LMainLibName) --TODO take into account sublibraries
 
 -- | Given a version, return an API-compatible (according to PVP) version range.
 --

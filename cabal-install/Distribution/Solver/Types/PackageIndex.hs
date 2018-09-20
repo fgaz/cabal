@@ -57,7 +57,7 @@ import Distribution.Package
          , Package(..), packageName, packageVersion )
 import Distribution.Types.Dependency
 import Distribution.Version
-         ( withinRange )
+         ( VersionRange, withinRange )
 import Distribution.Simple.Utils
          ( lowercase, comparing )
 
@@ -210,10 +210,7 @@ deletePackageName name =
   delete name (\pkg -> packageName pkg == name)
 
 -- | Removes all packages satisfying this dependency from the index.
---
--- TODO I should probably remove only the packages in that range which also
--- contain all the specified named libraries, but it seems that this function
--- isn't even used anywhere. Also see the TODO below
+-- Does not take into account sublibraries, only version ranges.
 deleteDependency :: Package pkg => Dependency -> PackageIndex pkg
                  -> PackageIndex pkg
 deleteDependency (Dependency name verstionRange _) =
@@ -272,12 +269,14 @@ lookupPackageName index name =
 -- We get back any number of versions of the specified package name, all
 -- satisfying the version range constraint.
 --
-lookupDependency :: Package pkg => PackageIndex pkg -> Dependency -> [pkg]
-lookupDependency index (Dependency name versionRange _) =
+lookupDependency :: Package pkg
+                 => PackageIndex pkg
+                 -> PackageName -> VersionRange
+                 -> [pkg]
+lookupDependency index name versionRange =
   [ pkg | pkg <- lookup index name
         , packageName pkg == name
         , packageVersion pkg `withinRange` versionRange ]
-        -- TODO: , all (`elem` (subLibraries {- <-this does not exist yet -} pkg)) components ]
 
 --
 -- * Case insensitive name lookups

@@ -29,8 +29,6 @@ instance Semigroup DependencyMap where
     (DependencyMap a) <> (DependencyMap b) =
         DependencyMap (Map.unionWith intersectVersionRangesAndJoinComponents a b)
 
--- TODO use a better name
--- TODO is this even the correct thing to do? (the <>)
 intersectVersionRangesAndJoinComponents :: (VersionRange, Set LibraryName)
                                         -> (VersionRange, Set LibraryName)
                                         -> (VersionRange, Set LibraryName)

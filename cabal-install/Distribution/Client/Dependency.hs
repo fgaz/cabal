@@ -946,7 +946,6 @@ configuredPackageProblems platform cinfo
       (PackageIdentifier name  version)
       (Dependency        name' versionRange _) = assert (name == name') $
         version `withinRange` versionRange
-        --TODO add sublib check too
 
     dependencyName (Dependency name _ _) = name
 
@@ -1020,9 +1019,9 @@ resolveWithoutDependencies (DepResolverParams targets constraints
       where
         -- Constraints
         requiredVersions = packageConstraints pkgname
-        pkgDependency    = Dependency pkgname requiredVersions mempty
         choices          = PackageIndex.lookupDependency sourcePkgIndex
-                                                         pkgDependency
+                                                         pkgname
+                                                         requiredVersions
 
         -- Preferences
         PackagePreferences preferredVersions preferInstalled _

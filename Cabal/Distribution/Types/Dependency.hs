@@ -36,7 +36,13 @@ import qualified Data.Set as Set
 
 -- | Describes a dependency on a source package (API)
 --
-data Dependency = Dependency PackageName VersionRange (Set LibraryName)
+data Dependency = Dependency
+                    PackageName
+                    VersionRange
+                    (Set LibraryName)
+                    -- ^ The set of libraries required from the package.
+                    -- Only the selected libraries will be built.
+                    -- It does not affect the cabal-install solver yet.
                   deriving (Generic, Read, Show, Eq, Typeable, Data)
 
 depPkgName :: Dependency -> PackageName
@@ -90,9 +96,12 @@ instance Text Dependency where
     where makeLib pn ln | unPackageName pn == ln = LMainLibName
                         | otherwise = LSubLibName $ mkUnqualComponentName ln
 
+-- mempty should never be in a Dependency-as-dependency.
+-- This is only here until the Dependency-as-constraint problem is solved #5570.
+-- Same for below.
 thisPackageVersion :: PackageIdentifier -> Dependency
 thisPackageVersion (PackageIdentifier n v) =
-  Dependency n (thisVersion v) Set.empty --TODO what does this do? is it safe to put empty? same for below.
+  Dependency n (thisVersion v) Set.empty
 
 notThisPackageVersion :: PackageIdentifier -> Dependency
 notThisPackageVersion (PackageIdentifier n v) =

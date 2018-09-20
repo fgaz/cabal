@@ -874,7 +874,7 @@ dependencySatisfiable
 dependencySatisfiable
   use_external_internal_deps
   exact_config pn installedPackageSet internalPackageSet requiredDepsMap
-  d@(Dependency depName vr sublibs) -- TODO this definitely needs updating
+  (Dependency depName vr sublibs)
 
     | exact_config
     -- When we're given '--exact-configuration', we assume that all
@@ -920,11 +920,11 @@ dependencySatisfiable
     isInternalDep = Map.member depName internalPackageSet
 
     depSatisfiable =
-        not . null $ PackageIndex.lookupDependency installedPackageSet d
+        not . null $ PackageIndex.lookupDependency installedPackageSet depName vr
 
     internalDepSatisfiable =
         not . null $ PackageIndex.lookupInternalDependency
-                        installedPackageSet (Dependency pn vr mempty) cn -- TODO check this
+                        installedPackageSet pn vr cn
       where
         cn | pn == depName
            = Nothing
@@ -1212,7 +1212,7 @@ selectDependency :: PackageId -- ^ Package id of current package
                  -> [Either FailedDependency DependencyResolution]
 selectDependency pkgid internalIndex installedIndex requiredDepsMap
   use_external_internal_deps
-  dep@(Dependency dep_pkgname vr libs) =
+  (Dependency dep_pkgname vr libs) =
   -- If the dependency specification matches anything in the internal package
   -- index, then we prefer that match to anything in the second.
   -- For example:
@@ -1252,14 +1252,14 @@ selectDependency pkgid internalIndex installedIndex requiredDepsMap
 
     -- It's an external package, normal situation
     do_external_external =
-        case PackageIndex.lookupDependency installedIndex dep of
+        case PackageIndex.lookupDependency installedIndex dep_pkgname vr of
           []   -> Left (DependencyNotExists dep_pkgname)
           pkgs -> Right $ head $ snd $ last pkgs
 
     -- It's an internal library, being looked up externally
     do_external_internal mb_uqn =
         case PackageIndex.lookupInternalDependency installedIndex
-                (Dependency (packageName pkgid) vr mempty) mb_uqn of --TODO hmm... seems relevant
+                (packageName pkgid) vr mb_uqn of
           []   -> Left (DependencyMissingInternal dep_pkgname (packageName pkgid))
           pkgs -> Right $ head $ snd $ last pkgs
 

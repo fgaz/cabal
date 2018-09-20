@@ -379,7 +379,6 @@ expandUserTarget verbosity worldFile userTarget = case userTarget of
     UserTargetNamed (Dependency name vrange _cs) ->
       let props = [ PackagePropertyVersion vrange
                   | not (isAnyVersion vrange) ]
-                  -- TODO if filtering by sublib, add to the list ↑ the pkg prop sublibs
       in  return [PackageTargetNamedFuzzy name props userTarget]
 
     UserTargetWorld -> do

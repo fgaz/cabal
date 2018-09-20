@@ -275,7 +275,7 @@ getSourcePackagesAtIndexState verbosity repoCtxt mb_idxState = do
 
   let (pkgs, prefs) = mconcat pkgss
       prefs' = Map.fromListWith intersectVersionRanges
-                 [ (name, range) | Dependency name range _ <- prefs ] --TODO sublibs too?
+                 [ (name, range) | Dependency name range _ <- prefs ]
   _ <- evaluate pkgs
   _ <- evaluate prefs'
   return SourcePackageDb {

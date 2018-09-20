@@ -97,7 +97,7 @@ data PackageProperty
    | PackagePropertySource
    | PackagePropertyFlags     FlagAssignment
    | PackagePropertyStanzas   [OptionalStanza]
-  -- TODO if we want to filter packages without the specified sublibs we should
+  -- MAYBE if we want to filter out packages without the specified sublibs,
   -- add a PackagePropertySublibraries
   deriving (Eq, Show, Generic)
 
