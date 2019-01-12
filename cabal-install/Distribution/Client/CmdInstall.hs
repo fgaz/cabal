@@ -46,7 +46,7 @@ import Distribution.Client.ProjectConfig.Types
          , projectConfigDistDir, projectConfigConfigFile )
 import Distribution.Simple.Program.Db
          ( userSpecifyPaths, userSpecifyArgss, defaultProgramDb
-         , modifyProgramSearchPath )
+         , modifyProgramSearchPath, ProgramDb )
 import Distribution.Simple.Program.Find
          ( ProgramSearchPathEntry(..) )
 import Distribution.Client.Config
@@ -89,7 +89,8 @@ import Distribution.Simple.Command
 import Distribution.Simple.Configure
          ( configCompilerEx )
 import Distribution.Simple.Compiler
-         ( Compiler(..), CompilerId(..), CompilerFlavor(..) )
+         ( Compiler(..), CompilerId(..), CompilerFlavor(..)
+         , PackageDBStack )
 import Distribution.Simple.GHC
          ( ghcPlatformAndVersionString
          , GhcImplInfo(..), getImplInfo
@@ -565,59 +566,18 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
     buildOutcomes <- runProjectBuildPhase verbosity baseCtx buildCtx
     runProjectPostBuildPhase verbosity baseCtx buildCtx buildOutcomes
 
+    -- Now that we built everything we can do the installation part.
+    -- First, figure out if / what parts we want to install:
     let
       dryRun = buildSettingDryRun $ buildSettings baseCtx
-      mkPkgBinDir = (</> "bin") .
-                    storePackageDirectory
-                       (cabalStoreDirLayout $ cabalDirLayout baseCtx)
-                       compilerId
       installLibs = fromFlagOrDefault False (ninstInstallLibs newInstallFlags)
 
-    when (not installLibs && not dryRun) $ do
-      -- If there are exes, symlink them
-      let symlinkBindirUnknown =
-            "symlink-bindir is not defined. Set it in your cabal config file "
-            ++ "or use --symlink-bindir=<path>"
-      symlinkBindir <- fromFlagOrDefault (die' verbosity symlinkBindirUnknown)
-                    $ fmap makeAbsolute
-                    $ projectConfigSymlinkBinDir
-                    $ projectConfigBuildOnly
-                    $ projectConfig $ baseCtx
-      createDirectoryIfMissingVerbose verbosity False symlinkBindir
-      warnIfNoExes verbosity buildCtx
-      let
-        doSymlink = symlinkBuiltPackage
-                      verbosity
-                      overwritePolicy
-                      mkPkgBinDir symlinkBindir
-        in traverse_ doSymlink $ Map.toList $ targetsMap buildCtx
-
-    when (installLibs && not dryRun) $
-      if supportsPkgEnvFiles
-        then do
-          -- Why do we get it again? If we updated a globalPackage then we need
-          -- the new version.
-          installedIndex' <- getInstalledPackages verbosity compiler packageDbs progDb'
-          let
-            getLatest = fmap (head . snd) . take 1 . sortBy (comparing (Down . fst))
-                      . PI.lookupPackageName installedIndex'
-            globalLatest = concat (getLatest <$> globalPackages)
-
-            baseEntries =
-              GhcEnvFileClearPackageDbStack : fmap GhcEnvFilePackageDb packageDbs
-            globalEntries = GhcEnvFilePackageId . installedUnitId <$> globalLatest
-            pkgEntries = ordNub $
-                  globalEntries
-              ++ envEntries'
-              ++ entriesForLibraryComponents (targetsMap buildCtx)
-            contents' = renderGhcEnvironmentFile (baseEntries ++ pkgEntries)
-          createDirectoryIfMissing True (takeDirectory envFile)
-          writeFileAtomic envFile (BS.pack contents')
-        else
-          warn verbosity $
-              "The current compiler doesn't support safely installing libraries, "
-            ++ "so only executables will be available. (Library installation is "
-            ++ "supported on GHC 8.0+ only)"
+    -- Then, install!
+    when (not dryRun) $ do
+      when (not installLibs) $
+        installExes verbosity baseCtx buildCtx compiler newInstallFlags
+      when installLibs $
+        installLibraries verbosity buildCtx compiler packageDbs progDb envFile envEntries'
   where
     configFlags' = disableTestsBenchsByDefault configFlags
     verbosity = fromFlagOrDefault normal (configVerbosity configFlags')
@@ -625,8 +585,75 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
                   globalFlags configFlags' configExFlags
                   installFlags haddockFlags testFlags
     globalConfigFlag = projectConfigConfigFile (projectConfigShared cliConfig)
+
+-- | Install any built exe by symlinking it
+installExes :: Verbosity
+            -> ProjectBaseContext
+            -> ProjectBuildContext
+            -> Compiler
+            -> NewInstallFlags
+            -> IO ()
+installExes verbosity baseCtx buildCtx compiler newInstallFlags = do
+  let mkPkgBinDir = (</> "bin") .
+                    storePackageDirectory
+                       (cabalStoreDirLayout $ cabalDirLayout baseCtx)
+                       (compilerId compiler)
+      symlinkBindirUnknown =
+        "symlink-bindir is not defined. Set it in your cabal config file "
+        ++ "or use --symlink-bindir=<path>"
+  symlinkBindir <- fromFlagOrDefault (die' verbosity symlinkBindirUnknown)
+                $ fmap makeAbsolute
+                $ projectConfigSymlinkBinDir
+                $ projectConfigBuildOnly
+                $ projectConfig baseCtx
+  createDirectoryIfMissingVerbose verbosity False symlinkBindir
+  warnIfNoExes verbosity buildCtx
+  let
+    doSymlink = symlinkBuiltPackage
+                  verbosity
+                  overwritePolicy
+                  mkPkgBinDir symlinkBindir
+    in traverse_ doSymlink $ Map.toList $ targetsMap buildCtx
+  where
     overwritePolicy = fromFlagOrDefault NeverOverwrite
                         $ ninstOverwritePolicy newInstallFlags
+
+-- | Install any built library by adding it to the default ghc environment
+installLibraries :: Verbosity
+                 -> ProjectBuildContext
+                 -> Compiler
+                 -> PackageDBStack
+                 -> ProgramDb
+                 -> FilePath -- ^ Environment file
+                 -> [GhcEnvironmentFileEntry]
+                 -> IO ()
+installLibraries verbosity buildCtx compiler
+                 packageDbs programDb envFile envEntries = do
+  -- Why do we get it again? If we updated a globalPackage then we need
+  -- the new version.
+  installedIndex <- getInstalledPackages verbosity compiler packageDbs programDb
+  if supportsPkgEnvFiles $ getImplInfo compiler
+    then do
+      let
+        getLatest = fmap (head . snd) . take 1 . sortBy (comparing (Down . fst))
+                  . PI.lookupPackageName installedIndex
+        globalLatest = concat (getLatest <$> globalPackages)
+
+        baseEntries =
+          GhcEnvFileClearPackageDbStack : fmap GhcEnvFilePackageDb packageDbs
+        globalEntries = GhcEnvFilePackageId . installedUnitId <$> globalLatest
+        pkgEntries = ordNub $
+              globalEntries
+          ++ envEntries
+          ++ entriesForLibraryComponents (targetsMap buildCtx)
+        contents' = renderGhcEnvironmentFile (baseEntries ++ pkgEntries)
+      createDirectoryIfMissing True (takeDirectory envFile)
+      writeFileAtomic envFile (BS.pack contents')
+    else
+      warn verbosity $
+          "The current compiler doesn't support safely installing libraries, "
+        ++ "so only executables will be available. (Library installation is "
+        ++ "supported on GHC 8.0+ only)"
 
 warnIfNoExes :: Verbosity -> ProjectBuildContext -> IO ()
 warnIfNoExes verbosity buildCtx =
