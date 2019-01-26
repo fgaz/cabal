@@ -131,10 +131,14 @@ import System.Directory
 import System.FilePath
          ( (</>), takeDirectory, takeBaseName )
 
+data BindirMethod = BindirMethodCopy
+                  | BindirMethodSymlink
+
 data NewInstallFlags = NewInstallFlags
   { ninstInstallLibs :: Flag Bool
   , ninstEnvironmentPath :: Flag FilePath
   , ninstOverwritePolicy :: Flag OverwritePolicy
+  , ninstBindirMethod :: Flag BindirMethod
   }
 
 defaultNewInstallFlags :: NewInstallFlags
@@ -142,6 +146,7 @@ defaultNewInstallFlags = NewInstallFlags
   { ninstInstallLibs = toFlag False
   , ninstEnvironmentPath = mempty
   , ninstOverwritePolicy = toFlag NeverOverwrite
+  , ninstBindirMethod = toFlag BindirMethodSymlink
   }
 
 newInstallOptions :: ShowOrParseArgs -> [OptionField NewInstallFlags]
@@ -161,6 +166,13 @@ newInstallOptions _ =
         "always|never"
         readOverwritePolicyFlag
         showOverwritePolicyFlag
+  , option [] ["bindir-method"]
+    "TODO description."
+    ninstBindirMethod (\v flags -> flags { ninstBindirMethod = v })
+    $ reqArg
+        "copy|symlink"
+        readBindirMethodFlag
+        showBindirMethodFlag
   ]
   where
     readOverwritePolicyFlag = ReadE $ \case
@@ -170,6 +182,13 @@ newInstallOptions _ =
     showOverwritePolicyFlag (Flag AlwaysOverwrite) = ["always"]
     showOverwritePolicyFlag (Flag NeverOverwrite)  = ["never"]
     showOverwritePolicyFlag NoFlag                 = []
+    readBindirMethodFlag = ReadE $ \case
+      "copy"    -> Right $ Flag BindirMethodCopy
+      "symlink" -> Right $ Flag BindirMethodSymlink
+      method    -> Left  $ "'" <> method <> "' isn't a valid bindir-method"
+    showBindirMethodFlag (Flag BindirMethodCopy)    = ["copy"]
+    showBindirMethodFlag (Flag BindirMethodSymlink) = ["symlink"]
+    showBindirMethodFlag NoFlag                     = []
 
 installCommand :: CommandUI ( ConfigFlags, ConfigExFlags, InstallFlags
                             , HaddockFlags, TestFlags, NewInstallFlags
@@ -575,7 +594,7 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
     -- Then, install!
     when (not dryRun) $ do
       when (not installLibs) $
-        installExes verbosity baseCtx buildCtx compiler newInstallFlags
+        installExes verbosity baseCtx buildCtx compiler configFlags newInstallFlags
       when installLibs $
         installLibraries verbosity buildCtx compiler packageDbs progDb envFile envEntries'
   where
@@ -586,14 +605,16 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
                   installFlags haddockFlags testFlags
     globalConfigFlag = projectConfigConfigFile (projectConfigShared cliConfig)
 
--- | Install any built exe by symlinking it
+-- | Install any built exe by symlinking/copying it
 installExes :: Verbosity
             -> ProjectBaseContext
             -> ProjectBuildContext
             -> Compiler
+            -> ConfigFlags
             -> NewInstallFlags
             -> IO ()
-installExes verbosity baseCtx buildCtx compiler newInstallFlags = do
+installExes verbosity baseCtx buildCtx compiler configFlags newInstallFlags = do
+  -- XXX The comment in InstallSymlink.hs (pkgBinDir) says this is too naive (and it is)
   let mkPkgBinDir = (</> "bin") .
                     storePackageDirectory
                        (cabalStoreDirLayout $ cabalDirLayout baseCtx)
@@ -601,22 +622,37 @@ installExes verbosity baseCtx buildCtx compiler newInstallFlags = do
       symlinkBindirUnknown =
         "symlink-bindir is not defined. Set it in your cabal config file "
         ++ "or use --symlink-bindir=<path>"
+      bindirUnknown =
+        "bindir is not defined. Set it in your cabal config file "
+        ++ "or use --bindir=<path>"
+  -- TODO check only for the one we use... or use only one.
   symlinkBindir <- fromFlagOrDefault (die' verbosity symlinkBindirUnknown)
                 $ fmap makeAbsolute
                 $ projectConfigSymlinkBinDir
                 $ projectConfigBuildOnly
                 $ projectConfig baseCtx
+  putStrLn "AAAAA"
+  print $ configInstallDirs configFlags
+  putStrLn "BBBBB"
+  {-copyBindir        <- fromFlagOrDefault (die' verbosity bindirUnknown)
+                $ fmap makeAbsolute
+                $ undefined --TODO TODO TODO
+                $ configInstallDirs
+                $ configFlags-}
+  let copyBindir = "fake-bindir"
   createDirectoryIfMissingVerbose verbosity False symlinkBindir
   warnIfNoExes verbosity buildCtx
   let
-    doSymlink = symlinkBuiltPackage
+    doInstall = installPackageExes
                   verbosity
-                  overwritePolicy
-                  mkPkgBinDir symlinkBindir
-    in traverse_ doSymlink $ Map.toList $ targetsMap buildCtx
+                  overwritePolicy --MAYBE pass the whole install flags
+                  mkPkgBinDir symlinkBindir copyBindir bindirMethod
+    in traverse_ doInstall $ Map.toList $ targetsMap buildCtx
   where
     overwritePolicy = fromFlagOrDefault NeverOverwrite
                         $ ninstOverwritePolicy newInstallFlags
+    bindirMethod    = fromFlagOrDefault BindirMethodSymlink
+                        $ ninstBindirMethod newInstallFlags
 
 -- | Install any built library by adding it to the default ghc environment
 installLibraries :: Verbosity
@@ -701,27 +737,34 @@ disableTestsBenchsByDefault configFlags =
               , configBenchmarks = Flag False <> configBenchmarks configFlags }
 
 -- | Symlink every exe from a package from the store to a given location
-symlinkBuiltPackage :: Verbosity
-                    -> OverwritePolicy -- ^ Whether to overwrite existing files
-                    -> (UnitId -> FilePath) -- ^ A function to get an UnitId's
-                                            -- store directory
-                    -> FilePath -- ^ Where to put the symlink
-                    -> ( UnitId
-                        , [(ComponentTarget, [TargetSelector])] )
-                     -> IO ()
-symlinkBuiltPackage verbosity overwritePolicy
-                    mkSourceBinDir destDir
-                    (pkg, components) =
-  traverse_ symlinkAndWarn exes
+installPackageExes :: Verbosity
+                   -> OverwritePolicy -- ^ Whether to overwrite existing files
+                   -> (UnitId -> FilePath) -- ^ A function to get an UnitId's
+                                           -- store directory
+                   -> FilePath
+                   -> FilePath
+                   -> BindirMethod
+                   -> ( UnitId
+                       , [(ComponentTarget, [TargetSelector])] )
+                   -> IO ()
+installPackageExes verbosity overwritePolicy
+                   mkSourceBinDir
+                   symlinkBindir copyBindir bindirMethod
+                   (pkg, components) =
+  traverse_ installAndWarn exes
   where
     exes = catMaybes $ (exeMaybe . fst) <$> components
     exeMaybe (ComponentTarget (CExeName exe) _) = Just exe
     exeMaybe _ = Nothing
-    symlinkAndWarn exe = do
-      success <- symlinkBuiltExe
+    installAndWarn exe = do
+      success <- installBuiltExe
                    verbosity overwritePolicy
-                   (mkSourceBinDir pkg) destDir exe
-      let errorMessage = case overwritePolicy of
+                   (mkSourceBinDir pkg) exe
+                   symlinkBindir copyBindir bindirMethod
+      let destDir = case bindirMethod
+                    of BindirMethodSymlink -> symlinkBindir
+                       BindirMethodCopy    -> copyBindir
+          errorMessage = case overwritePolicy of
                   NeverOverwrite ->
                     "Path '" <> (destDir </> prettyShow exe) <> "' already exists. "
                     <> "Use --overwrite-policy=always to overwrite."
@@ -730,19 +773,31 @@ symlinkBuiltPackage verbosity overwritePolicy
                   AlwaysOverwrite -> "Symlinking '" <> prettyShow exe <> "' failed."
       unless success $ die' verbosity errorMessage
 
--- | Symlink a specific exe.
-symlinkBuiltExe :: Verbosity -> OverwritePolicy
-                -> FilePath -> FilePath
+-- | Install a specific exe.
+installBuiltExe :: Verbosity -> OverwritePolicy
+                -> FilePath
                 -> UnqualComponentName
+                -> FilePath
+                -> FilePath
+                -> BindirMethod
                 -> IO Bool
-symlinkBuiltExe verbosity overwritePolicy sourceDir destDir exe = do
+installBuiltExe verbosity overwritePolicy
+                sourceDir exe
+                symlinkBindir _ BindirMethodSymlink = do
   notice verbosity $ "Symlinking '" <> prettyShow exe <> "'"
   symlinkBinary
     overwritePolicy
-    destDir
+    symlinkBindir
     sourceDir
     exe
     $ unUnqualComponentName exe
+installBuiltExe verbosity overwritePolicy
+                sourceDir exe
+                _ copyBindir BindirMethodCopy = do
+  notice verbosity $ "Copying '" <> prettyShow exe <> "'"
+  putStrLn $ "this would copy " ++ unUnqualComponentName exe ++ " to " ++ copyBindir
+  return True -- TODO TODO TODO
+  --die' verbosity "Not implemented"
 
 -- | Create 'GhcEnvironmentFileEntry's for packages with exposed libraries.
 entriesForLibraryComponents :: TargetsMap -> [GhcEnvironmentFileEntry]
