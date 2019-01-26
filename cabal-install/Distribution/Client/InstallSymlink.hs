@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Distribution.Client.InstallSymlink
@@ -27,9 +28,12 @@ import Distribution.Client.Setup (InstallFlags)
 import Distribution.Simple.Setup (ConfigFlags)
 import Distribution.Simple.Compiler
 import Distribution.System
+import GHC.Generics (Generic)
 
 data OverwritePolicy = NeverOverwrite | AlwaysOverwrite
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, Bounded, Enum)
+
+instance Binary OverwritePolicy
 
 symlinkBinaries :: Platform -> Compiler
                 -> OverwritePolicy
@@ -46,6 +50,9 @@ symlinkBinary :: OverwritePolicy
 symlinkBinary _ _ _ _ _ = fail "Symlinking feature not available on Windows"
 
 #else
+
+import Distribution.Compat.Binary
+         ( Binary )
 
 import Distribution.Client.Types
          ( ConfiguredPackage(..), BuildOutcomes )
@@ -93,9 +100,13 @@ import Control.Exception
          ( assert )
 import Data.Maybe
          ( catMaybes )
+import GHC.Generics
+         ( Generic )
 
 data OverwritePolicy = NeverOverwrite | AlwaysOverwrite
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, Bounded, Enum)
+
+instance Binary OverwritePolicy
 
 -- | We would like by default to install binaries into some location that is on
 -- the user's PATH. For per-user installations on Unix systems that basically

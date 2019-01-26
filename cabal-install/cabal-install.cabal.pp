@@ -96,6 +96,7 @@ Version:            2.5.0.0
         Distribution.Client.CmdFreeze
         Distribution.Client.CmdHaddock
         Distribution.Client.CmdInstall
+        Distribution.Client.CmdInstall.ClientInstallFlags
         Distribution.Client.CmdRepl
         Distribution.Client.CmdRun
         Distribution.Client.CmdTest

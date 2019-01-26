@@ -28,6 +28,8 @@ import Distribution.Simple.Program.Db
 import Distribution.Types.PackageVersionConstraint
 
 import Distribution.Client.Types
+import Distribution.Client.CmdInstall.ClientInstallFlags
+import Distribution.Client.InstallSymlink
 import Distribution.Client.Dependency.Types
 import Distribution.Client.BuildReports.Types
 import Distribution.Client.Targets
@@ -349,6 +351,21 @@ arbitraryGlobLikeStr = outerTerm
     braces s   = "{" ++ s ++ "}"
 
 
+instance Arbitrary OverwritePolicy where
+    arbitrary = arbitraryBoundedEnum
+
+instance Arbitrary BindirMethod where
+    arbitrary = arbitraryBoundedEnum
+
+instance Arbitrary ClientInstallFlags where
+    arbitrary =
+      ClientInstallFlags
+        <$> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+        <*> arbitrary
+
 instance Arbitrary ProjectConfigBuildOnly where
     arbitrary =
       ProjectConfigBuildOnly
@@ -369,6 +386,7 @@ instance Arbitrary ProjectConfigBuildOnly where
         <*> arbitrary
         <*> (fmap getShortToken <$> arbitrary)
         <*> (fmap getShortToken <$> arbitrary)
+        <*> arbitrary
       where
         arbitraryNumJobs = fmap (fmap getPositive) <$> arbitrary
 
