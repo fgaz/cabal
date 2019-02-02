@@ -25,6 +25,8 @@ import Distribution.Client.ProjectOrchestration
 import Distribution.Client.CmdErrorMessages
 import Distribution.Client.CmdSdist
 
+import Distribution.Client.CmdInstall.ClientInstallFlags
+
 import Distribution.Client.Setup
          ( GlobalFlags(..), ConfigFlags(..), ConfigExFlags, InstallFlags(..)
          , configureExOptions, installOptions, testOptions, liftOptions )
@@ -50,7 +52,7 @@ import Distribution.Simple.Program.Db
 import Distribution.Simple.Program.Find
          ( ProgramSearchPathEntry(..) )
 import Distribution.Client.Config
-         ( getCabalDir )
+         ( getCabalDir, loadConfig, SavedConfig(..) )
 import qualified Distribution.Simple.PackageIndex as PI
 import Distribution.Solver.Types.PackageIndex
          ( lookupPackageName, searchByName )
@@ -78,14 +80,11 @@ import Distribution.Client.InstallSymlink
          ( OverwritePolicy(..), symlinkBinary )
 import Distribution.Simple.Setup
          ( Flag(..), HaddockFlags, TestFlags, fromFlagOrDefault, flagToMaybe
-         , trueArg, configureOptions, haddockOptions, flagToList, toFlag )
+         , configureOptions, haddockOptions )
 import Distribution.Solver.Types.SourcePackage
          ( SourcePackage(..) )
-import Distribution.ReadE
-         ( ReadE(..), succeedReadE )
 import Distribution.Simple.Command
-         ( CommandUI(..), ShowOrParseArgs(..), OptionField(..)
-         , option, usageAlternatives, reqArg )
+         ( CommandUI(..), OptionField(..), usageAlternatives )
 import Distribution.Simple.Configure
          ( configCompilerEx )
 import Distribution.Simple.Compiler
@@ -131,67 +130,9 @@ import System.Directory
 import System.FilePath
          ( (</>), takeDirectory, takeBaseName )
 
-data BindirMethod = BindirMethodCopy
-                  | BindirMethodSymlink
-
-data NewInstallFlags = NewInstallFlags
-  { ninstInstallLibs :: Flag Bool
-  , ninstEnvironmentPath :: Flag FilePath
-  , ninstOverwritePolicy :: Flag OverwritePolicy
-  , ninstBindirMethod :: Flag BindirMethod
-  }
-
-defaultNewInstallFlags :: NewInstallFlags
-defaultNewInstallFlags = NewInstallFlags
-  { ninstInstallLibs = toFlag False
-  , ninstEnvironmentPath = mempty
-  , ninstOverwritePolicy = toFlag NeverOverwrite
-  , ninstBindirMethod = toFlag BindirMethodSymlink
-  }
-
-newInstallOptions :: ShowOrParseArgs -> [OptionField NewInstallFlags]
-newInstallOptions _ =
-  [ option [] ["lib"]
-    "Install libraries rather than executables from the target package."
-    ninstInstallLibs (\v flags -> flags { ninstInstallLibs = v })
-    trueArg
-  , option [] ["package-env", "env"]
-    "Set the environment file that may be modified."
-    ninstEnvironmentPath (\pf flags -> flags { ninstEnvironmentPath = pf })
-    (reqArg "ENV" (succeedReadE Flag) flagToList)
-  , option [] ["overwrite-policy"]
-    "How to handle already existing symlinks."
-    ninstOverwritePolicy (\v flags -> flags { ninstOverwritePolicy = v })
-    $ reqArg
-        "always|never"
-        readOverwritePolicyFlag
-        showOverwritePolicyFlag
-  , option [] ["bindir-method"]
-    "TODO description."
-    ninstBindirMethod (\v flags -> flags { ninstBindirMethod = v })
-    $ reqArg
-        "copy|symlink"
-        readBindirMethodFlag
-        showBindirMethodFlag
-  ]
-  where
-    readOverwritePolicyFlag = ReadE $ \case
-      "always" -> Right $ Flag AlwaysOverwrite
-      "never"  -> Right $ Flag NeverOverwrite
-      policy   -> Left  $ "'" <> policy <> "' isn't a valid overwrite policy"
-    showOverwritePolicyFlag (Flag AlwaysOverwrite) = ["always"]
-    showOverwritePolicyFlag (Flag NeverOverwrite)  = ["never"]
-    showOverwritePolicyFlag NoFlag                 = []
-    readBindirMethodFlag = ReadE $ \case
-      "copy"    -> Right $ Flag BindirMethodCopy
-      "symlink" -> Right $ Flag BindirMethodSymlink
-      method    -> Left  $ "'" <> method <> "' isn't a valid bindir-method"
-    showBindirMethodFlag (Flag BindirMethodCopy)    = ["copy"]
-    showBindirMethodFlag (Flag BindirMethodSymlink) = ["symlink"]
-    showBindirMethodFlag NoFlag                     = []
 
 installCommand :: CommandUI ( ConfigFlags, ConfigExFlags, InstallFlags
-                            , HaddockFlags, TestFlags, NewInstallFlags
+                            , HaddockFlags, TestFlags, ClientInstallFlags
                             )
 installCommand = CommandUI
   { commandName         = "v2-install"
@@ -241,8 +182,8 @@ installCommand = CommandUI
                   . optionName) $
                                 haddockOptions showOrParseArgs)
      ++ liftOptions get5 set5 (testOptions showOrParseArgs)
-     ++ liftOptions get6 set6 (newInstallOptions showOrParseArgs)
-  , commandDefaultFlags = (mempty, mempty, mempty, mempty, mempty, defaultNewInstallFlags)
+     ++ liftOptions get6 set6 (clientInstallOptions showOrParseArgs)
+  , commandDefaultFlags = (mempty, mempty, mempty, mempty, mempty, defaultClientInstallFlags)
   }
   where
     get1 (a,_,_,_,_,_) = a; set1 a (_,b,c,d,e,f) = (a,b,c,d,e,f)
@@ -270,9 +211,9 @@ installCommand = CommandUI
 -- For more details on how this works, see the module
 -- "Distribution.Client.ProjectOrchestration"
 --
-installAction :: (ConfigFlags, ConfigExFlags, InstallFlags, HaddockFlags, TestFlags, NewInstallFlags)
+installAction :: (ConfigFlags, ConfigExFlags, InstallFlags, HaddockFlags, TestFlags, ClientInstallFlags)
             -> [String] -> GlobalFlags -> IO ()
-installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags, newInstallFlags)
+installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags, clientInstallFlags')
             targetStrings globalFlags = do
   -- We never try to build tests/benchmarks for remote packages.
   -- So we set them as disabled by default and error if they are explicitly
@@ -283,6 +224,12 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
   when (configBenchmarks configFlags' == Flag True) $
     die' verbosity $ "--enable-benchmarks was specified, but benchmarks can't "
                   ++ "be enabled in a remote package"
+
+  -- We cannot use establishDummyProjectBaseContext to get these flags, since
+  -- it requires one of them as an argument. Normal establishProjectBaseContext
+  -- does not, and this is why this is done only for the install command
+  let configFileFlag        = globalConfigFile        globalFlags
+  clientInstallFlags <- (`mappend` clientInstallFlags') <$> savedClientInstallFlags <$> loadConfig verbosity configFileFlag
 
   let
     withProject = do
@@ -503,7 +450,7 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
       GhcEnvFilePackageId _ -> True
       _ -> False
 
-  envFile <- case flagToMaybe (ninstEnvironmentPath newInstallFlags) of
+  envFile <- case flagToMaybe (cinstEnvironmentPath clientInstallFlags) of
     Just spec
       -- Is spec a bare word without any "pathy" content, then it refers to
       -- a named global environment.
@@ -589,12 +536,12 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
     -- First, figure out if / what parts we want to install:
     let
       dryRun = buildSettingDryRun $ buildSettings baseCtx
-      installLibs = fromFlagOrDefault False (ninstInstallLibs newInstallFlags)
+      installLibs = fromFlagOrDefault False (cinstInstallLibs clientInstallFlags)
 
     -- Then, install!
     when (not dryRun) $ do
       when (not installLibs) $
-        installExes verbosity baseCtx buildCtx compiler configFlags newInstallFlags
+        installExes verbosity baseCtx buildCtx compiler configFlags clientInstallFlags
       when installLibs $
         installLibraries verbosity buildCtx compiler packageDbs progDb envFile envEntries'
   where
@@ -602,7 +549,8 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
     verbosity = fromFlagOrDefault normal (configVerbosity configFlags')
     cliConfig = commandLineFlagsToProjectConfig
                   globalFlags configFlags' configExFlags
-                  installFlags haddockFlags testFlags
+                  installFlags clientInstallFlags'
+                  haddockFlags testFlags
     globalConfigFlag = projectConfigConfigFile (projectConfigShared cliConfig)
 
 -- | Install any built exe by symlinking/copying it
@@ -611,9 +559,9 @@ installExes :: Verbosity
             -> ProjectBuildContext
             -> Compiler
             -> ConfigFlags
-            -> NewInstallFlags
+            -> ClientInstallFlags
             -> IO ()
-installExes verbosity baseCtx buildCtx compiler configFlags newInstallFlags = do
+installExes verbosity baseCtx buildCtx compiler configFlags clientInstallFlags = do
   -- XXX The comment in InstallSymlink.hs (pkgBinDir) says this is too naive (and it is)
   let mkPkgBinDir = (</> "bin") .
                     storePackageDirectory
@@ -632,14 +580,14 @@ installExes verbosity baseCtx buildCtx compiler configFlags newInstallFlags = do
                 $ projectConfigBuildOnly
                 $ projectConfig baseCtx
   putStrLn "AAAAA"
-  print $ configInstallDirs configFlags
+  print $ clientInstallFlags
   putStrLn "BBBBB"
   {-copyBindir        <- fromFlagOrDefault (die' verbosity bindirUnknown)
                 $ fmap makeAbsolute
                 $ undefined --TODO TODO TODO
                 $ configInstallDirs
                 $ configFlags-}
-  let copyBindir = "fake-bindir"
+  copyBindir <- fromFlagOrDefault (die' verbosity bindirUnknown) $ pure <$> cinstCopydir clientInstallFlags
   createDirectoryIfMissingVerbose verbosity False symlinkBindir
   warnIfNoExes verbosity buildCtx
   let
@@ -650,9 +598,9 @@ installExes verbosity baseCtx buildCtx compiler configFlags newInstallFlags = do
     in traverse_ doInstall $ Map.toList $ targetsMap buildCtx
   where
     overwritePolicy = fromFlagOrDefault NeverOverwrite
-                        $ ninstOverwritePolicy newInstallFlags
+                        $ cinstOverwritePolicy clientInstallFlags
     bindirMethod    = fromFlagOrDefault BindirMethodSymlink
-                        $ ninstBindirMethod newInstallFlags
+                        $ cinstBindirMethod clientInstallFlags
 
 -- | Install any built library by adding it to the default ghc environment
 installLibraries :: Verbosity
