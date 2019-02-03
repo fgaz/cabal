@@ -361,10 +361,12 @@ instance Arbitrary ClientInstallFlags where
     arbitrary =
       ClientInstallFlags
         <$> arbitrary
+        <*> pathLike
         <*> arbitrary
         <*> arbitrary
-        <*> arbitrary
-        <*> arbitrary
+        <*> pathLike
+      where
+        pathLike = toFlag . show . getNonEmpty <$> (arbitrary :: Gen (NonEmptyList String))
 
 instance Arbitrary ProjectConfigBuildOnly where
     arbitrary =
@@ -406,7 +408,8 @@ instance Arbitrary ProjectConfigBuildOnly where
                                   , projectConfigHttpTransport = x13
                                   , projectConfigIgnoreExpiry = x14
                                   , projectConfigCacheDir = x15
-                                  , projectConfigLogsDir = x16 } =
+                                  , projectConfigLogsDir = x16
+                                  , projectConfigClientInstallFlags = x17 } =
       [ ProjectConfigBuildOnly { projectConfigVerbosity = x00'
                                , projectConfigDryRun = x01'
                                , projectConfigOnlyDeps = x02'
@@ -423,7 +426,8 @@ instance Arbitrary ProjectConfigBuildOnly where
                                , projectConfigHttpTransport = x13
                                , projectConfigIgnoreExpiry = x14'
                                , projectConfigCacheDir = x15
-                               , projectConfigLogsDir = x16 }
+                               , projectConfigLogsDir = x16
+                               , projectConfigClientInstallFlags = x17 }
       | ((x00', x01', x02', x03', x04'),
          (x05', x06', x07', x08', x09'),
          (x10', x11', x12',       x14'))
