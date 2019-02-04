@@ -20,6 +20,9 @@ module Distribution.Client.InstallSymlink (
 
 #ifdef mingw32_HOST_OS
 
+import Distribution.Compat.Binary
+         ( Binary )
+
 import Distribution.Package (PackageIdentifier)
 import Distribution.Types.UnqualComponentName
 import Distribution.Client.InstallPlan (InstallPlan)
