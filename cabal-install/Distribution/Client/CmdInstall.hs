@@ -583,13 +583,13 @@ installExes verbosity baseCtx buildCtx compiler clientInstallFlags = do
     doInstall = installPackageExes
                   verbosity
                   overwritePolicy
-                  mkPkgBinDir installdir bindirMethod
+                  mkPkgBinDir installdir installMethod
     in traverse_ doInstall $ Map.toList $ targetsMap buildCtx
   where
     overwritePolicy = fromFlagOrDefault NeverOverwrite
                         $ cinstOverwritePolicy clientInstallFlags
-    bindirMethod    = fromFlagOrDefault BindirMethodSymlink
-                        $ cinstBindirMethod clientInstallFlags
+    installMethod    = fromFlagOrDefault InstallMethodSymlink
+                        $ cinstInstallMethod clientInstallFlags
 
 -- | Install any built library by adding it to the default ghc environment
 installLibraries :: Verbosity
@@ -679,13 +679,13 @@ installPackageExes :: Verbosity
                    -> (UnitId -> FilePath) -- ^ A function to get an UnitId's
                                            -- store directory
                    -> FilePath
-                   -> BindirMethod
+                   -> InstallMethod
                    -> ( UnitId
                        , [(ComponentTarget, [TargetSelector])] )
                    -> IO ()
 installPackageExes verbosity overwritePolicy
                    mkSourceBinDir
-                   installdir bindirMethod
+                   installdir installMethod
                    (pkg, components) =
   traverse_ installAndWarn exes
   where
@@ -696,16 +696,16 @@ installPackageExes verbosity overwritePolicy
       success <- installBuiltExe
                    verbosity overwritePolicy
                    (mkSourceBinDir pkg) exe
-                   installdir bindirMethod
+                   installdir installMethod
       let errorMessage = case overwritePolicy of
                   NeverOverwrite ->
                     "Path '" <> (installdir </> prettyShow exe) <> "' already exists. "
                     <> "Use --overwrite-policy=always to overwrite."
                   -- This shouldn't even be possible, but we keep it in case
                   -- symlinking/copying logic changes
-                  AlwaysOverwrite -> case bindirMethod of
-                                       BindirMethodSymlink -> "Symlinking"
-                                       BindirMethodCopy    -> "Copying"
+                  AlwaysOverwrite -> case installMethod of
+                                       InstallMethodSymlink -> "Symlinking"
+                                       InstallMethodCopy    -> "Copying"
                                   <> " '" <> prettyShow exe <> "' failed."
       unless success $ die' verbosity errorMessage
 
@@ -714,11 +714,11 @@ installBuiltExe :: Verbosity -> OverwritePolicy
                 -> FilePath
                 -> UnqualComponentName
                 -> FilePath
-                -> BindirMethod
+                -> InstallMethod
                 -> IO Bool
 installBuiltExe verbosity overwritePolicy
                 sourceDir exe
-                installdir BindirMethodSymlink = do
+                installdir InstallMethodSymlink = do
   notice verbosity $ "Symlinking '" <> prettyShow exe <> "'"
   symlinkBinary
     overwritePolicy
@@ -728,7 +728,7 @@ installBuiltExe verbosity overwritePolicy
     $ unUnqualComponentName exe
 installBuiltExe verbosity overwritePolicy
                 sourceDir exe
-                installdir BindirMethodCopy = do
+                installdir InstallMethodCopy = do
   notice verbosity $ "Copying '" <> prettyShow exe <> "'"
   exists <- doesPathExist destination
   case (exists, overwritePolicy) of

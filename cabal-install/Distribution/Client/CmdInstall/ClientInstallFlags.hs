@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 module Distribution.Client.CmdInstall.ClientInstallFlags
-( BindirMethod(..)
+( InstallMethod(..)
 , ClientInstallFlags(..)
 , defaultClientInstallFlags
 , clientInstallOptions
@@ -20,17 +20,17 @@ import Distribution.Client.InstallSymlink
          ( OverwritePolicy(..) )
 
 
-data BindirMethod = BindirMethodCopy
-                  | BindirMethodSymlink
+data InstallMethod = InstallMethodCopy
+                   | InstallMethodSymlink
   deriving (Eq, Show, Generic, Bounded, Enum)
 
-instance Binary BindirMethod
+instance Binary InstallMethod
 
 data ClientInstallFlags = ClientInstallFlags
   { cinstInstallLibs :: Flag Bool
   , cinstEnvironmentPath :: Flag FilePath
   , cinstOverwritePolicy :: Flag OverwritePolicy
-  , cinstBindirMethod :: Flag BindirMethod --TODO bindir-method or install-method?
+  , cinstInstallMethod :: Flag InstallMethod
   , cinstInstalldir :: Flag FilePath
   } deriving (Eq, Show, Generic)
 
@@ -48,7 +48,7 @@ defaultClientInstallFlags = ClientInstallFlags
   { cinstInstallLibs = toFlag False
   , cinstEnvironmentPath = mempty
   , cinstOverwritePolicy = toFlag NeverOverwrite
-  , cinstBindirMethod = toFlag BindirMethodSymlink
+  , cinstInstallMethod = toFlag InstallMethodSymlink
   , cinstInstalldir = mempty
   }
 
@@ -69,13 +69,13 @@ clientInstallOptions _ =
         "always|never"
         readOverwritePolicyFlag
         showOverwritePolicyFlag
-  , option [] ["bindir-method"]
+  , option [] ["install-method"]
     "How to install the executables."
-    cinstBindirMethod (\v flags -> flags { cinstBindirMethod = v })
+    cinstInstallMethod (\v flags -> flags { cinstInstallMethod = v })
     $ reqArg
         "copy|symlink"
-        readBindirMethodFlag
-        showBindirMethodFlag
+        readInstallMethodFlag
+        showInstallMethodFlag
   , option [] ["installdir"]
     "Where to install (by symlinking or copying) the executables in."
     cinstInstalldir (\v flags -> flags { cinstInstalldir = v })
@@ -93,14 +93,14 @@ showOverwritePolicyFlag (Flag AlwaysOverwrite) = ["always"]
 showOverwritePolicyFlag (Flag NeverOverwrite)  = ["never"]
 showOverwritePolicyFlag NoFlag                 = []
 
-readBindirMethodFlag :: ReadE (Flag BindirMethod)
-readBindirMethodFlag = ReadE $ \case
-  "copy"    -> Right $ Flag BindirMethodCopy
-  "symlink" -> Right $ Flag BindirMethodSymlink
-  method    -> Left  $ "'" <> method <> "' isn't a valid bindir-method"
+readInstallMethodFlag :: ReadE (Flag InstallMethod)
+readInstallMethodFlag = ReadE $ \case
+  "copy"    -> Right $ Flag InstallMethodCopy
+  "symlink" -> Right $ Flag InstallMethodSymlink
+  method    -> Left  $ "'" <> method <> "' isn't a valid install-method"
 
-showBindirMethodFlag :: Flag BindirMethod -> [String]
-showBindirMethodFlag (Flag BindirMethodCopy)    = ["copy"]
-showBindirMethodFlag (Flag BindirMethodSymlink) = ["symlink"]
-showBindirMethodFlag NoFlag                     = []
+showInstallMethodFlag :: Flag InstallMethod -> [String]
+showInstallMethodFlag (Flag InstallMethodCopy)    = ["copy"]
+showInstallMethodFlag (Flag InstallMethodSymlink) = ["symlink"]
+showInstallMethodFlag NoFlag                      = []
 

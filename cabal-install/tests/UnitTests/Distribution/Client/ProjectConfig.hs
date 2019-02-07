@@ -354,7 +354,7 @@ arbitraryGlobLikeStr = outerTerm
 instance Arbitrary OverwritePolicy where
     arbitrary = arbitraryBoundedEnum
 
-instance Arbitrary BindirMethod where
+instance Arbitrary InstallMethod where
     arbitrary = arbitraryBoundedEnum
 
 instance Arbitrary ClientInstallFlags where

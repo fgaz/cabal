@@ -341,7 +341,7 @@ instance Semigroup SavedConfig where
         cinstInstallLibs = combine cinstInstallLibs,
         cinstEnvironmentPath = combine cinstEnvironmentPath,
         cinstOverwritePolicy = combine cinstOverwritePolicy,
-        cinstBindirMethod = combine cinstBindirMethod,
+        cinstInstallMethod = combine cinstInstallMethod,
         cinstInstalldir = combine cinstInstalldir
         }
         where
