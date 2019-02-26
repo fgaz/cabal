@@ -71,10 +71,13 @@ import Distribution.Client.IndexUtils
 import Distribution.Client.ProjectConfig
          ( readGlobalConfig, projectConfigWithBuilderRepoContext
          , resolveBuildTimeSettings, withProjectOrGlobalConfig )
+import Distribution.Client.ProjectPlanning
+         ( storePackageInstallDirs' )
+import qualified Distribution.Simple.InstallDirs as InstallDirs
 import Distribution.Client.DistDirLayout
          ( defaultDistDirLayout, DistDirLayout(..), mkCabalDirLayout
          , ProjectRoot(ProjectRootImplicit)
-         , storePackageDirectory, cabalStoreDirLayout
+         , cabalStoreDirLayout
          , CabalDirLayout(..), StoreDirLayout(..) )
 import Distribution.Client.RebuildMonad
          ( runRebuild )
@@ -91,16 +94,18 @@ import Distribution.Simple.Configure
          ( configCompilerEx )
 import Distribution.Simple.Compiler
          ( Compiler(..), CompilerId(..), CompilerFlavor(..)
-         , PackageDBStack )
+         , PackageDBStack, compilerInfo )
 import Distribution.Simple.GHC
          ( ghcPlatformAndVersionString
          , GhcImplInfo(..), getImplInfo
          , GhcEnvironmentFileEntry(..)
          , renderGhcEnvironmentFile, readGhcEnvironmentFile, ParseErrorExc )
+import Distribution.System
+         ( Platform )
 import Distribution.Types.UnitId
          ( UnitId )
 import Distribution.Types.UnqualComponentName
-         ( UnqualComponentName, unUnqualComponentName )
+         ( UnqualComponentName, unUnqualComponentName, mkUnqualComponentName )
 import Distribution.Verbosity
          ( Verbosity, normal, lessVerbose )
 import Distribution.Simple.Utils
@@ -547,7 +552,7 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
     -- Then, install!
     when (not dryRun) $ do
       when (not installLibs) $
-        installExes verbosity baseCtx buildCtx compiler clientInstallFlags
+        installExes verbosity baseCtx buildCtx platform compiler clientInstallFlags
       when installLibs $
         installLibraries verbosity buildCtx compiler packageDbs progDb envFile envEntries'
   where
@@ -560,18 +565,33 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
     globalConfigFlag = projectConfigConfigFile (projectConfigShared cliConfig)
 
 -- | Install any built exe by symlinking/copying it
+-- we don't use BuildOutcomes because we also need the component names
 installExes :: Verbosity
             -> ProjectBaseContext
             -> ProjectBuildContext
+            -> Platform
             -> Compiler
             -> ClientInstallFlags
             -> IO ()
-installExes verbosity baseCtx buildCtx compiler clientInstallFlags = do
-  -- XXX The comment in InstallSymlink.hs (pkgBinDir) says this is too naive (and it is)
-  let mkPkgBinDir = (</> "bin") .
-                    storePackageDirectory
-                       (cabalStoreDirLayout $ cabalDirLayout baseCtx)
-                       (compilerId compiler)
+installExes verbosity baseCtx buildCtx platform compiler
+            clientInstallFlags = do
+  let storeDirLayout = cabalStoreDirLayout $ cabalDirLayout baseCtx
+  let mkPkgBinDir :: UnitId -> FilePath
+      mkPkgBinDir = InstallDirs.bindir .
+                    storePackageInstallDirs'
+                      storeDirLayout
+                      (compilerId compiler)
+      mkExeName :: PackageIdentifier -> UnitId -> UnqualComponentName -> FilePath
+      mkExeName pkgid unitid exe = prefix ++ unUnqualComponentName exe ++ suffix
+        where
+          -- TODO is AllPackages ok? should it be package-specific instead? or combine the two?
+          -- if it's ok: move all this to outer `where`
+          -- if not: combine them
+          pkgConfig = projectConfigAllPackages $ projectConfig baseCtx
+          prefixTemplate = fromFlagTemplate $ packageConfigProgPrefix pkgConfig
+          suffixTemplate = fromFlagTemplate $ packageConfigProgSuffix pkgConfig
+          prefix = substTemplate pkgid unitid prefixTemplate
+          suffix = substTemplate pkgid unitid suffixTemplate
       installdirUnknown =
         "installdir is not defined. Set it in your cabal config file "
         ++ "or use --installdir=<path>"
@@ -583,13 +603,22 @@ installExes verbosity baseCtx buildCtx compiler clientInstallFlags = do
     doInstall = installPackageExes
                   verbosity
                   overwritePolicy
-                  mkPkgBinDir installdir installMethod
+                  mkPkgBinDir
+                  (mkExeName undefined) -- FIXME: We go straight to unit id so
+                                        -- we have no way of knowing the package
+                  installdir installMethod
     in traverse_ doInstall $ Map.toList $ targetsMap buildCtx
   where
     overwritePolicy = fromFlagOrDefault NeverOverwrite
                         $ cinstOverwritePolicy clientInstallFlags
     installMethod    = fromFlagOrDefault InstallMethodSymlink
                         $ cinstInstallMethod clientInstallFlags
+    fromFlagTemplate = fromFlagOrDefault (InstallDirs.toPathTemplate "")
+    substTemplate pkgid unitid = InstallDirs.fromPathTemplate
+                               . InstallDirs.substPathTemplate env
+      where env = InstallDirs.initialPathTemplateEnv pkgid unitid
+                                                     (compilerInfo compiler)
+                                                     platform
 
 -- | Install any built library by adding it to the default ghc environment
 installLibraries :: Verbosity
@@ -674,17 +703,19 @@ disableTestsBenchsByDefault configFlags =
               , configBenchmarks = Flag False <> configBenchmarks configFlags }
 
 -- | Symlink/copy every exe from a package from the store to a given location
+-- TODO s/Package/Unit/ s/pkg/unit/
 installPackageExes :: Verbosity
                    -> OverwritePolicy -- ^ Whether to overwrite existing files
                    -> (UnitId -> FilePath) -- ^ A function to get an UnitId's
                                            -- store directory
+                   -> (UnitId -> UnqualComponentName -> FilePath) -- ^ get exe name
                    -> FilePath
                    -> InstallMethod
                    -> ( UnitId
                        , [(ComponentTarget, [TargetSelector])] )
                    -> IO ()
 installPackageExes verbosity overwritePolicy
-                   mkSourceBinDir
+                   mkSourceBinDir mkExeName
                    installdir installMethod
                    (pkg, components) =
   traverse_ installAndWarn exes
@@ -695,7 +726,7 @@ installPackageExes verbosity overwritePolicy
     installAndWarn exe = do
       success <- installBuiltExe
                    verbosity overwritePolicy
-                   (mkSourceBinDir pkg) exe
+                   (mkSourceBinDir pkg) (mkExeName pkg exe)
                    installdir installMethod
       let errorMessage = case overwritePolicy of
                   NeverOverwrite ->
@@ -712,31 +743,30 @@ installPackageExes verbosity overwritePolicy
 -- | Install a specific exe.
 installBuiltExe :: Verbosity -> OverwritePolicy
                 -> FilePath
-                -> UnqualComponentName
+                -> FilePath
                 -> FilePath
                 -> InstallMethod
                 -> IO Bool
 installBuiltExe verbosity overwritePolicy
-                sourceDir exe
+                sourceDir exeName
                 installdir InstallMethodSymlink = do
-  notice verbosity $ "Symlinking '" <> prettyShow exe <> "'"
+  notice verbosity $ "Symlinking '" <> exeName <> "'"
   symlinkBinary
     overwritePolicy
     installdir
     sourceDir
-    exe
-    $ unUnqualComponentName exe
+    (mkUnqualComponentName exeName)
+    exeName
 installBuiltExe verbosity overwritePolicy
-                sourceDir exe
+                sourceDir exeName
                 installdir InstallMethodCopy = do
-  notice verbosity $ "Copying '" <> prettyShow exe <> "'"
+  notice verbosity $ "Copying '" <> exeName <> "'"
   exists <- doesPathExist destination
   case (exists, overwritePolicy) of
     (True , NeverOverwrite ) -> pure False
     (True , AlwaysOverwrite) -> remove >> copy
     (False, _              ) -> copy
   where
-    exeName = unUnqualComponentName exe
     source = sourceDir </> exeName
     destination = installdir </> exeName
     remove = do
