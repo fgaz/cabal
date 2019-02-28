@@ -34,7 +34,8 @@ import Distribution.Client.Config
          ( SavedConfig(..), remoteRepoFields )
 
 import Distribution.Client.CmdInstall.ClientInstallFlags
-         ( ClientInstallFlags(..), defaultClientInstallFlags )
+         ( ClientInstallFlags(..), defaultClientInstallFlags
+         , clientInstallOptions )
 
 import Distribution.Solver.Types.ConstraintSource
 
@@ -979,6 +980,12 @@ legacySharedConfigFieldDescrs =
       ]
   . commandOptionsToFields
   ) (installOptions ParseArgs)
+ ++
+  ( liftFields
+      legacyClientInstallFlags
+      (\flags conf -> conf { legacyClientInstallFlags = flags })
+  . commandOptionsToFields
+  ) (clientInstallOptions ParseArgs)
   where
     constraintSrc = ConstraintSourceProjectConfig "TODO"
 

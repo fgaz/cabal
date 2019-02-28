@@ -361,12 +361,10 @@ instance Arbitrary ClientInstallFlags where
     arbitrary =
       ClientInstallFlags
         <$> arbitrary
-        <*> pathLike
+        <*> arbitraryFlag arbitraryShortToken
         <*> arbitrary
         <*> arbitrary
-        <*> pathLike
-      where
-        pathLike = toFlag . show . getNonEmpty <$> (arbitrary :: Gen (NonEmptyList String))
+        <*> arbitraryFlag arbitraryShortToken
 
 instance Arbitrary ProjectConfigBuildOnly where
     arbitrary =
@@ -427,14 +425,16 @@ instance Arbitrary ProjectConfigBuildOnly where
                                , projectConfigIgnoreExpiry = x14'
                                , projectConfigCacheDir = x15
                                , projectConfigLogsDir = x16
-                               , projectConfigClientInstallFlags = x17 }
+                               , projectConfigClientInstallFlags = x17' }
       | ((x00', x01', x02', x03', x04'),
          (x05', x06', x07', x08', x09'),
-         (x10', x11', x12',       x14'))
+         (x10', x11', x12',       x14'),
+         (            x17'            ))
           <- shrink
                ((x00, x01, x02, x03, x04),
                 (x05, x06, x07, x08, preShrink_NumJobs x09),
-                (x10, x11, x12,      x14))
+                (x10, x11, x12,      x14),
+                (          x17          ))
       ]
       where
         preShrink_NumJobs  = fmap (fmap Positive)
