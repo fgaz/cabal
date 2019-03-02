@@ -549,6 +549,7 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags, testFlags
       dryRun = buildSettingDryRun $ buildSettings baseCtx
       installLibs = fromFlagOrDefault False (cinstInstallLibs clientInstallFlags)
 
+    print configFlags'
     -- Then, install!
     when (not dryRun) $ do
       when (not installLibs) $
@@ -575,6 +576,7 @@ installExes :: Verbosity
             -> IO ()
 installExes verbosity baseCtx buildCtx platform compiler
             clientInstallFlags = do
+  print $ projectConfigAllPackages $ projectConfig baseCtx
   let storeDirLayout = cabalStoreDirLayout $ cabalDirLayout baseCtx
   let mkPkgBinDir :: UnitId -> FilePath
       mkPkgBinDir = InstallDirs.bindir .
