@@ -38,18 +38,10 @@ cache:
 
 build_script:
   - runghc cabal-dev-scripts/src/Preprocessor.hs -o cabal-install/cabal-install.cabal -f CABAL_FLAG_LIB cabal-install/cabal-install.cabal.pp
-  - cabal %CABOPTS% new-configure --enable-tests
+  - cabal %CABOPTS% new-configure
   - appveyor-retry cabal %CABOPTS% new-build lib:Cabal --only-dependencies
   - cabal %CABOPTS% new-build lib:Cabal
-  - appveyor-retry cabal %CABOPTS% new-build Cabal:tests --only-dependencies
-  - cabal %CABOPTS% new-test Cabal
-  - appveyor-retry cabal %CABOPTS% new-build exe:cabal exe:cabal-tests --only-dependencies
+  - appveyor-retry cabal %CABOPTS% new-build exe:cabal --only-dependencies
   - cabal %CABOPTS% new-build exe:cabal
-  - cabal %CABOPTS% new-run cabal-tests -- -j3 --with-cabal=dist-newstyle\build\x86_64-windows\ghc-8.0.2\cabal-install-2.5.0.0\x\cabal\build\cabal\cabal.exe
-  - appveyor-retry cabal %CABOPTS% new-build cabal-install:tests --only-dependencies
-  - cd cabal-install
-  - cabal %CABOPTS% new-run cabal-install:memory-usage-tests
-  - cabal %CABOPTS% new-run cabal-install:solver-quickcheck
-  - cabal %CABOPTS% new-run cabal-install:integration-tests2
-  - cabal %CABOPTS% new-run cabal-install:unit-tests -- --pattern "! (/FileMonitor/ || /VCS/ || /Get/)"
+  - cabal %CABOPTS% new-run cabal-install:exe:cabal -- new-install pony
   
