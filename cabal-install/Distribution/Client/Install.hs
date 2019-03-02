@@ -210,6 +210,9 @@ install verbosity packageDBs repos comp platform progdb useSandbox mSandboxPkgIn
   globalFlags configFlags configExFlags installFlags haddockFlags testFlags
   userTargets0 = do
 
+    putStrLn "OLD-INSTALL CONFIG FLAGS"
+    print configFlags
+    putStrLn "END OLD-INSTALL CONFIG FLAGS"
     unless (installRootCmd installFlags == Cabal.NoFlag) $
         warn verbosity $ "--root-cmd is no longer supported, "
         ++ "see https://github.com/haskell/cabal/issues/3353"

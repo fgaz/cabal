@@ -43,6 +43,9 @@ build_script:
   - cabal %CABOPTS% new-build lib:Cabal
   - appveyor-retry cabal %CABOPTS% new-build exe:cabal --only-dependencies
   - cabal %CABOPTS% new-build exe:cabal
+  - cabal %CABOPTS% new-run cabal-install:exe:cabal -- v1-install pony
+  - can-i-have-a-pony
+  - rm %APPDATA%\cabal\bin\can-i-have-a-pony
   - cabal %CABOPTS% new-run cabal-install:exe:cabal -- new-install pony --installdir=%APPDATA%\cabal\bin --install-method=copy
   - ls %APPDATA%\cabal\bin
   - can-i-have-a-pony
