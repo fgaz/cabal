@@ -51,6 +51,8 @@ import Distribution.Client.ProjectConfig.Types
 import Distribution.Simple.Program.Db
          ( userSpecifyPaths, userSpecifyArgss, defaultProgramDb
          , modifyProgramSearchPath, ProgramDb )
+import Distribution.Simple.BuildPaths
+         ( exeExtension )
 import Distribution.Simple.Program.Find
          ( ProgramSearchPathEntry(..) )
 import Distribution.Client.Config
@@ -584,7 +586,7 @@ installExes verbosity baseCtx buildCtx platform compiler
                       storeDirLayout
                       (compilerId compiler)
       mkExeName :: PackageIdentifier -> UnitId -> UnqualComponentName -> FilePath
-      mkExeName pkgid unitid exe = prefix ++ unUnqualComponentName exe ++ suffix
+      mkExeName pkgid unitid exe = prefix ++ unUnqualComponentName exe ++ suffix ++ ext
         where
           -- TODO is AllPackages ok? should it be package-specific instead? or combine the two?
           -- if it's ok: move all this to outer `where`
@@ -594,6 +596,8 @@ installExes verbosity baseCtx buildCtx platform compiler
           suffixTemplate = fromFlagTemplate $ packageConfigProgSuffix pkgConfig
           prefix = substTemplate pkgid unitid prefixTemplate
           suffix = substTemplate pkgid unitid suffixTemplate
+          ext = case exeExtension platform of "" -> ""
+                                              e  -> "." <> e
       installdirUnknown =
         "installdir is not defined. Set it in your cabal config file "
         ++ "or use --installdir=<path>"
