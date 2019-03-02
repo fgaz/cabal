@@ -600,12 +600,15 @@ installExes verbosity baseCtx buildCtx platform compiler
   createDirectoryIfMissingVerbose verbosity False installdir
   warnIfNoExes verbosity buildCtx
   let
+    -- FIXME: We go straight to unit id so we have no way of knowing the package
+    packageNotKnownError = "Package name required to compute the executable "
+                        ++ "name, but there is currently no way of knowing the "
+                        ++ "package. This is a bug."
     doInstall = installPackageExes
                   verbosity
                   overwritePolicy
                   mkPkgBinDir
-                  (mkExeName undefined) -- FIXME: We go straight to unit id so
-                                        -- we have no way of knowing the package
+                  (mkExeName $ error packageNotKnownError)
                   installdir installMethod
     in traverse_ doInstall $ Map.toList $ targetsMap buildCtx
   where
