@@ -890,7 +890,7 @@ dependencySatisfiable
 dependencySatisfiable
   use_external_internal_deps
   exact_config pn installedPackageSet internalPackageSet requiredDepsMap
-  (Dependency depName vr sublibs)
+  (Dependency depName vr sublibs syntax)
 
     | exact_config
     -- When we're given '--exact-configuration', we assume that all
@@ -908,6 +908,7 @@ dependencySatisfiable
         else
           -- Backward compatibility for the old sublibrary syntax
           (sublibs == Set.singleton LMainLibName
+            && syntax == DependencySyntaxUnqualified
             && Map.member
                  (pn, CLibName $ LSubLibName $
                       packageNameToUnqualComponentName depName)
@@ -1233,7 +1234,7 @@ selectDependency :: PackageId -- ^ Package id of current package
                  -> [Either FailedDependency DependencyResolution]
 selectDependency pkgid internalIndex installedIndex requiredDepsMap
   use_external_internal_deps
-  (Dependency dep_pkgname vr libs) =
+  (Dependency dep_pkgname vr libs _) =
   -- If the dependency specification matches anything in the internal package
   -- index, then we prefer that match to anything in the second.
   -- For example:

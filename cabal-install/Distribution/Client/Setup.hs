@@ -2929,8 +2929,8 @@ parseDependencyOrPackageId = parse Parse.+++ liftM pkgidToDependency parse
   where
     pkgidToDependency :: PackageIdentifier -> Dependency
     pkgidToDependency p = case packageVersion p of
-      v | v == nullVersion -> Dependency (packageName p) anyVersion (Set.singleton LMainLibName)
-        | otherwise        -> Dependency (packageName p) (thisVersion v) (Set.singleton LMainLibName)
+      v | v == nullVersion -> Dependency (packageName p) anyVersion (Set.singleton LMainLibName) DependencySyntaxQualified
+        | otherwise        -> Dependency (packageName p) (thisVersion v) (Set.singleton LMainLibName) DependencySyntaxQualified
 
 showRepo :: RemoteRepo -> String
 showRepo repo = remoteRepoName repo ++ ":"

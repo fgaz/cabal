@@ -1,10 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TupleSections #-}
 module Distribution.Types.Dependency
   ( Dependency(..)
   , depPkgName
   , depVerRange
   , depLibraries
+  , depSyntax
+  , DependencySyntax(..)
   , thisPackageVersion
   , notThisPackageVersion
   , simplifyDependency
@@ -41,24 +44,49 @@ data Dependency = Dependency
                     -- ^ The set of libraries required from the package.
                     -- Only the selected libraries will be built.
                     -- It does not affect the cabal-install solver yet.
+                    DependencySyntax
+                    -- ^ Which syntax was used
                   deriving (Generic, Read, Show, Eq, Typeable, Data)
 
+data DependencySyntax = DependencySyntaxUnqualified
+                      -- ^ Simply @package@ (can also be interpreted as @lib@,
+                      -- where @lib@ is an internal sublibrary)
+                      | DependencySyntaxQualified
+                      -- ^ Fully qualified syntax: @package:sublibrary@
+                      -- or @package:{sublibrary1,2,...}@. There's no
+                      -- ambiguity here.
+                    deriving (Generic, Read, Show, Eq, Typeable, Data)
+
+-- XXX This should not even exist. Combining them is like combining package names and library names
+instance Semigroup DependencySyntax where
+    DependencySyntaxUnqualified <> DependencySyntaxUnqualified = DependencySyntaxUnqualified
+    _                           <> _                           = DependencySyntaxQualified
+
 depPkgName :: Dependency -> PackageName
-depPkgName (Dependency pn _ _) = pn
+depPkgName (Dependency pn _ _ _) = pn
 
 depVerRange :: Dependency -> VersionRange
-depVerRange (Dependency _ vr _) = vr
+depVerRange (Dependency _ vr _ _) = vr
 
 depLibraries :: Dependency -> Set LibraryName
-depLibraries (Dependency _ _ cs) = cs
+depLibraries (Dependency _ _ cs _) = cs
+
+depSyntax :: Dependency -> DependencySyntax
+depSyntax (Dependency _ _ _ s) = s
 
 instance Binary Dependency
 instance NFData Dependency where rnf = genericRnf
 
+instance Binary DependencySyntax
+instance NFData DependencySyntax where rnf = genericRnf
+
 instance Pretty Dependency where
-    pretty (Dependency name ver sublibs) = pretty name
+    pretty (Dependency name ver sublibs syntax) = pretty name
                                        <+> optionalMonoid
-                                             (sublibs /= Set.singleton LMainLibName)
+                                             (sublibs /= Set.singleton LMainLibName
+                                             -- XXX not sure if I should do this
+                                             -- Is it better to roundtrip or to always show the qualified syntax?
+                                             || syntax == DependencySyntaxQualified)
                                              (PP.colon <+> PP.braces prettySublibs)
                                        <+> pretty ver
       where
@@ -85,12 +113,13 @@ instance Parsec Dependency where
     parsec = do
         name <- lexemeParsec
 
-        libs <- option [LMainLibName]
-              $ (char ':' *> spaces *>)
-              $ versionGuardMultilibs
-              $ pure <$> parseLib name <|> parseMultipleLibs name
+        (libs, syntax) <- option ([LMainLibName], DependencySyntaxUnqualified) $
+          fmap (, DependencySyntaxQualified) $
+          (char ':' *> spaces *>) $
+          versionGuardMultilibs $
+          pure <$> parseLib name <|> parseMultipleLibs name
         ver  <- parsec <|> pure anyVersion
-        return $ Dependency name ver $ Set.fromList libs
+        return $ Dependency name ver (Set.fromList libs) syntax
       where makeLib pn ln | unPackageName pn == ln = LMainLibName
                           | otherwise = LSubLibName $ mkUnqualComponentName ln
             parseLib pn = makeLib pn <$> parsecUnqualComponentName
@@ -103,15 +132,15 @@ instance Parsec Dependency where
 -- Same for below.
 thisPackageVersion :: PackageIdentifier -> Dependency
 thisPackageVersion (PackageIdentifier n v) =
-  Dependency n (thisVersion v) Set.empty
+  Dependency n (thisVersion v) Set.empty DependencySyntaxQualified
 
 notThisPackageVersion :: PackageIdentifier -> Dependency
 notThisPackageVersion (PackageIdentifier n v) =
-  Dependency n (notThisVersion v) Set.empty
+  Dependency n (notThisVersion v) Set.empty DependencySyntaxQualified
 
 -- | Simplify the 'VersionRange' expression in a 'Dependency'.
 -- See 'simplifyVersionRange'.
 --
 simplifyDependency :: Dependency -> Dependency
-simplifyDependency (Dependency name range comps) =
-  Dependency name (simplifyVersionRange range) comps
+simplifyDependency (Dependency name range comps syntax) =
+  Dependency name (simplifyVersionRange range) comps syntax

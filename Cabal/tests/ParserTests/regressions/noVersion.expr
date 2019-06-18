@@ -10,7 +10,8 @@ GenericPackageDescription
                                                (IntersectVersionRanges
                                                   (LaterVersion `mkVersion [1]`)
                                                   (EarlierVersion `mkVersion [1]`))
-                                               (Set.fromList [LMainLibName])],
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified],
                       condTreeData = Library
                                        {exposedModules = [`ModuleName ["ElseIf"]`],
                                         libBuildInfo = BuildInfo
@@ -63,7 +64,8 @@ GenericPackageDescription
                                                                                      (EarlierVersion
                                                                                         `mkVersion [1]`))
                                                                                   (Set.fromList
-                                                                                     [LMainLibName])],
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified],
                                                           virtualModules = []},
                                         libExposed = True,
                                         libName = LMainLibName,

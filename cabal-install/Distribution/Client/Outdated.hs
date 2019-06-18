@@ -107,7 +107,7 @@ showResult verbosity outdatedDeps simpleOutput =
     then
     do when (not simpleOutput) $
          notice verbosity "Outdated dependencies:"
-       for_ outdatedDeps $ \(d@(Dependency pn _ _), v) ->
+       for_ outdatedDeps $ \(d@(Dependency pn _ _ _), v) ->
          let outdatedDep = if simpleOutput then display pn
                            else display d ++ " (latest: " ++ display v ++ ")"
          in notice verbosity outdatedDep
@@ -179,7 +179,7 @@ listOutdated deps pkgIndex (ListOutdatedSettings ignorePred minorPred) =
   mapMaybe isOutdated $ map simplifyDependency deps
   where
     isOutdated :: Dependency -> Maybe (Dependency, Version)
-    isOutdated dep@(Dependency pname vr _)
+    isOutdated dep@(Dependency pname vr _ _)
       | ignorePred (depPkgName dep) = Nothing
       | otherwise                   =
           let this   = map packageVersion $ lookupDependency pkgIndex pname vr
@@ -195,7 +195,7 @@ listOutdated deps pkgIndex (ListOutdatedSettings ignorePred minorPred) =
       in if this' < latest' then Just latest' else Nothing
 
     lookupLatest :: Dependency -> [Version]
-    lookupLatest dep@(Dependency pname vr _)
+    lookupLatest dep@(Dependency pname vr _ _)
       | minorPred (depPkgName dep) =
         map packageVersion $ lookupDependency pkgIndex  pname (relaxMinor vr)
       | otherwise                  =

@@ -21,7 +21,7 @@ module Distribution.Solver.Types.PackageConstraint (
 import Distribution.Compat.Binary      (Binary(..))
 import Distribution.Package            (PackageName)
 import Distribution.PackageDescription (FlagAssignment, dispFlagAssignment)
-import Distribution.Types.Dependency   (Dependency(..))
+import Distribution.Types.Dependency   (Dependency(..), DependencySyntax(..))
 import Distribution.Types.LibraryName  (LibraryName(..))
 import Distribution.Version            (VersionRange, simplifyVersionRange)
 
@@ -144,7 +144,7 @@ packageConstraintToDependency :: PackageConstraint -> Maybe Dependency
 packageConstraintToDependency (PackageConstraint scope prop) = toDep prop
   where
     toDep (PackagePropertyVersion vr) = 
-        Just $ Dependency (scopeToPackageName scope) vr (Set.singleton LMainLibName)
+        Just $ Dependency (scopeToPackageName scope) vr (Set.singleton LMainLibName) DependencySyntaxQualified
     toDep (PackagePropertyInstalled)  = Nothing
     toDep (PackagePropertySource)     = Nothing
     toDep (PackagePropertyFlags _)    = Nothing

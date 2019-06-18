@@ -191,7 +191,7 @@ data UserTargetProblem
 readUserTarget :: String -> IO (Either UserTargetProblem UserTarget)
 readUserTarget targetstr =
     case testNamedTargets targetstr of
-      Just (Dependency pkgn verrange _)
+      Just (Dependency pkgn verrange _ _)
         | pkgn == mkPackageName "world"
           -> return $ if verrange == anyVersion
                       then Right UserTargetWorld
@@ -259,8 +259,8 @@ readUserTarget targetstr =
       where
         pkgidToDependency :: PackageIdentifier -> Dependency
         pkgidToDependency p = case packageVersion p of
-          v | v == nullVersion -> Dependency (packageName p) anyVersion (Set.singleton LMainLibName)
-            | otherwise        -> Dependency (packageName p) (thisVersion v) (Set.singleton LMainLibName)
+          v | v == nullVersion -> Dependency (packageName p) anyVersion (Set.singleton LMainLibName) DependencySyntaxQualified
+            | otherwise        -> Dependency (packageName p) (thisVersion v) (Set.singleton LMainLibName) DependencySyntaxQualified
 
 
 reportUserTargetProblems :: Verbosity -> [UserTargetProblem] -> IO ()
@@ -380,7 +380,7 @@ expandUserTarget :: Verbosity
                  -> IO [PackageTarget (PackageLocation ())]
 expandUserTarget verbosity worldFile userTarget = case userTarget of
 
-    UserTargetNamed (Dependency name vrange _cs) ->
+    UserTargetNamed (Dependency name vrange _cs _) ->
       let props = [ PackagePropertyVersion vrange
                   | not (isAnyVersion vrange) ]
       in  return [PackageTargetNamedFuzzy name props userTarget]
@@ -389,7 +389,7 @@ expandUserTarget verbosity worldFile userTarget = case userTarget of
       worldPkgs <- World.getContents verbosity worldFile
       --TODO: should we warn if there are no world targets?
       return [ PackageTargetNamed name props userTarget
-             | World.WorldPkgInfo (Dependency name vrange _) flags <- worldPkgs
+             | World.WorldPkgInfo (Dependency name vrange _ _) flags <- worldPkgs
              , let props = [ PackagePropertyVersion vrange
                            | not (isAnyVersion vrange) ]
                         ++ [ PackagePropertyFlags flags

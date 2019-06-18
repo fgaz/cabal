@@ -8,31 +8,37 @@ GenericPackageDescription
                       condTreeConstraints = [Dependency
                                                `PackageName "network"`
                                                (MajorBoundVersion `mkVersion [0]`)
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "base"`
                                                (ThisVersion `mkVersion [1]`)
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "base"`
                                                (ThisVersion `mkVersion [1]`)
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "base"`
                                                (UnionVersionRanges
                                                   (ThisVersion `mkVersion [1]`)
                                                   (ThisVersion `mkVersion [2]`))
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "base"`
                                                (ThisVersion `mkVersion [1,2]`)
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "base"`
                                                (UnionVersionRanges
                                                   (ThisVersion `mkVersion [1,2]`)
                                                   (ThisVersion `mkVersion [3,4]`))
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "ghc"`
                                                (UnionVersionRanges
@@ -52,13 +58,15 @@ GenericPackageDescription
                                                                        `mkVersion [7,6,3]`)
                                                                     (ThisVersion
                                                                        `mkVersion [7,4,2]`))))))))
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "Cabal"`
                                                (UnionVersionRanges
                                                   (MajorBoundVersion `mkVersion [2,4,1,1]`)
                                                   (MajorBoundVersion `mkVersion [2,2,0,0]`))
-                                               (Set.fromList [LMainLibName])],
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified],
                       condTreeData = Library
                                        {exposedModules = [],
                                         libBuildInfo = BuildInfo
@@ -108,19 +116,22 @@ GenericPackageDescription
                                                                                   (MajorBoundVersion
                                                                                      `mkVersion [0]`)
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "base"`
                                                                                   (ThisVersion
                                                                                      `mkVersion [1]`)
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "base"`
                                                                                   (ThisVersion
                                                                                      `mkVersion [1]`)
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "base"`
                                                                                   (UnionVersionRanges
@@ -129,13 +140,15 @@ GenericPackageDescription
                                                                                      (ThisVersion
                                                                                         `mkVersion [2]`))
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "base"`
                                                                                   (ThisVersion
                                                                                      `mkVersion [1,2]`)
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "base"`
                                                                                   (UnionVersionRanges
@@ -144,7 +157,8 @@ GenericPackageDescription
                                                                                      (ThisVersion
                                                                                         `mkVersion [3,4]`))
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "ghc"`
                                                                                   (UnionVersionRanges
@@ -171,7 +185,8 @@ GenericPackageDescription
                                                                                                        (ThisVersion
                                                                                                           `mkVersion [7,4,2]`))))))))
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "Cabal"`
                                                                                   (UnionVersionRanges
@@ -180,7 +195,8 @@ GenericPackageDescription
                                                                                      (MajorBoundVersion
                                                                                         `mkVersion [2,2,0,0]`))
                                                                                   (Set.fromList
-                                                                                     [LMainLibName])],
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified],
                                                           virtualModules = []},
                                         libExposed = True,
                                         libName = LMainLibName,

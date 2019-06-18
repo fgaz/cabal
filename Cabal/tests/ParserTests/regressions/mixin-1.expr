@@ -7,15 +7,18 @@ GenericPackageDescription
                            condTreeConstraints = [Dependency
                                                     `PackageName "base"`
                                                     AnyVersion
-                                                    (Set.fromList [LMainLibName]),
+                                                    (Set.fromList [LMainLibName])
+                                                    DependencySyntaxUnqualified,
                                                   Dependency
                                                     `PackageName "str-string"`
                                                     AnyVersion
-                                                    (Set.fromList [LMainLibName]),
+                                                    (Set.fromList [LMainLibName])
+                                                    DependencySyntaxUnqualified,
                                                   Dependency
                                                     `PackageName "str-bytestring"`
                                                     AnyVersion
-                                                    (Set.fromList [LMainLibName])],
+                                                    (Set.fromList [LMainLibName])
+                                                    DependencySyntaxUnqualified],
                            condTreeData = Executable
                                             {buildInfo = BuildInfo
                                                            {asmOptions = [],
@@ -64,17 +67,20 @@ GenericPackageDescription
                                                                                     `PackageName "base"`
                                                                                     AnyVersion
                                                                                     (Set.fromList
-                                                                                       [LMainLibName]),
+                                                                                       [LMainLibName])
+                                                                                    DependencySyntaxUnqualified,
                                                                                   Dependency
                                                                                     `PackageName "str-string"`
                                                                                     AnyVersion
                                                                                     (Set.fromList
-                                                                                       [LMainLibName]),
+                                                                                       [LMainLibName])
+                                                                                    DependencySyntaxUnqualified,
                                                                                   Dependency
                                                                                     `PackageName "str-bytestring"`
                                                                                     AnyVersion
                                                                                     (Set.fromList
-                                                                                       [LMainLibName])],
+                                                                                       [LMainLibName])
+                                                                                    DependencySyntaxUnqualified],
                                                             virtualModules = []},
                                              exeName = `UnqualComponentName "str-example"`,
                                              exeScope = ExecutablePublic,

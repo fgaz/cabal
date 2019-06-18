@@ -13,7 +13,8 @@ GenericPackageDescription
                                                                                               `PackageName "Win32"`
                                                                                               AnyVersion
                                                                                               (Set.fromList
-                                                                                                 [LMainLibName])],
+                                                                                                 [LMainLibName])
+                                                                                              DependencySyntaxUnqualified],
                                                                      condTreeData = Library
                                                                                       {exposedModules = [],
                                                                                        libBuildInfo = BuildInfo
@@ -70,7 +71,8 @@ GenericPackageDescription
                                                                                                                                  `PackageName "Win32"`
                                                                                                                                  AnyVersion
                                                                                                                                  (Set.fromList
-                                                                                                                                    [LMainLibName])],
+                                                                                                                                    [LMainLibName])
+                                                                                                                                 DependencySyntaxUnqualified],
                                                                                                          virtualModules = []},
                                                                                        libExposed = True,
                                                                                        libName = LMainLibName,
@@ -82,15 +84,18 @@ GenericPackageDescription
                                                (IntersectVersionRanges
                                                   (OrLaterVersion `mkVersion [4,10]`)
                                                   (EarlierVersion `mkVersion [4,11]`))
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "containers"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "ghc-prim"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName])],
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified],
                       condTreeData = Library
                                        {exposedModules = [`ModuleName ["ElseIf"]`],
                                         libBuildInfo = BuildInfo
@@ -143,17 +148,20 @@ GenericPackageDescription
                                                                                      (EarlierVersion
                                                                                         `mkVersion [4,11]`))
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "containers"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "ghc-prim"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName])],
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified],
                                                           virtualModules = []},
                                         libExposed = True,
                                         libName = LMainLibName,
@@ -172,7 +180,8 @@ GenericPackageDescription
                                                                                                     `PackageName "Win32"`
                                                                                                     AnyVersion
                                                                                                     (Set.fromList
-                                                                                                       [LMainLibName])],
+                                                                                                       [LMainLibName])
+                                                                                                    DependencySyntaxUnqualified],
                                                                            condTreeData = Library
                                                                                             {exposedModules = [],
                                                                                              libBuildInfo = BuildInfo
@@ -229,7 +238,8 @@ GenericPackageDescription
                                                                                                                                        `PackageName "Win32"`
                                                                                                                                        AnyVersion
                                                                                                                                        (Set.fromList
-                                                                                                                                          [LMainLibName])],
+                                                                                                                                          [LMainLibName])
+                                                                                                                                       DependencySyntaxUnqualified],
                                                                                                                virtualModules = []},
                                                                                              libExposed = True,
                                                                                              libName = LSubLibName
@@ -242,15 +252,18 @@ GenericPackageDescription
                                                      (IntersectVersionRanges
                                                         (OrLaterVersion `mkVersion [4,10]`)
                                                         (EarlierVersion `mkVersion [4,11]`))
-                                                     (Set.fromList [LMainLibName]),
+                                                     (Set.fromList [LMainLibName])
+                                                     DependencySyntaxUnqualified,
                                                    Dependency
                                                      `PackageName "containers"`
                                                      AnyVersion
-                                                     (Set.fromList [LMainLibName]),
+                                                     (Set.fromList [LMainLibName])
+                                                     DependencySyntaxUnqualified,
                                                    Dependency
                                                      `PackageName "ghc-prim"`
                                                      AnyVersion
-                                                     (Set.fromList [LMainLibName])],
+                                                     (Set.fromList [LMainLibName])
+                                                     DependencySyntaxUnqualified],
                             condTreeData = Library
                                              {exposedModules = [`ModuleName ["ElseIf2"]`],
                                               libBuildInfo = BuildInfo
@@ -306,17 +319,20 @@ GenericPackageDescription
                                                                                            (EarlierVersion
                                                                                               `mkVersion [4,11]`))
                                                                                         (Set.fromList
-                                                                                           [LMainLibName]),
+                                                                                           [LMainLibName])
+                                                                                        DependencySyntaxUnqualified,
                                                                                       Dependency
                                                                                         `PackageName "containers"`
                                                                                         AnyVersion
                                                                                         (Set.fromList
-                                                                                           [LMainLibName]),
+                                                                                           [LMainLibName])
+                                                                                        DependencySyntaxUnqualified,
                                                                                       Dependency
                                                                                         `PackageName "ghc-prim"`
                                                                                         AnyVersion
                                                                                         (Set.fromList
-                                                                                           [LMainLibName])],
+                                                                                           [LMainLibName])
+                                                                                        DependencySyntaxUnqualified],
                                                                 virtualModules = []},
                                               libExposed = True,
                                               libName = LSubLibName
@@ -336,7 +352,8 @@ GenericPackageDescription
                                                                                                   `PackageName "Win32"`
                                                                                                   AnyVersion
                                                                                                   (Set.fromList
-                                                                                                     [LMainLibName])],
+                                                                                                     [LMainLibName])
+                                                                                                  DependencySyntaxUnqualified],
                                                                          condTreeData = TestSuite
                                                                                           {testBuildInfo = BuildInfo
                                                                                                              {asmOptions = [],
@@ -392,7 +409,8 @@ GenericPackageDescription
                                                                                                                                       `PackageName "Win32"`
                                                                                                                                       AnyVersion
                                                                                                                                       (Set.fromList
-                                                                                                                                         [LMainLibName])],
+                                                                                                                                         [LMainLibName])
+                                                                                                                                      DependencySyntaxUnqualified],
                                                                                                               virtualModules = []},
                                                                                            testInterface = TestSuiteUnsupported
                                                                                                              (TestTypeUnknown
@@ -408,7 +426,8 @@ GenericPackageDescription
                                                                                                   `PackageName "Win32"`
                                                                                                   AnyVersion
                                                                                                   (Set.fromList
-                                                                                                     [LMainLibName])],
+                                                                                                     [LMainLibName])
+                                                                                                  DependencySyntaxUnqualified],
                                                                          condTreeData = TestSuite
                                                                                           {testBuildInfo = BuildInfo
                                                                                                              {asmOptions = [],
@@ -464,7 +483,8 @@ GenericPackageDescription
                                                                                                                                       `PackageName "Win32"`
                                                                                                                                       AnyVersion
                                                                                                                                       (Set.fromList
-                                                                                                                                         [LMainLibName])],
+                                                                                                                                         [LMainLibName])
+                                                                                                                                      DependencySyntaxUnqualified],
                                                                                                               virtualModules = []},
                                                                                            testInterface = TestSuiteUnsupported
                                                                                                              (TestTypeUnknown
@@ -540,15 +560,18 @@ GenericPackageDescription
                                                    (IntersectVersionRanges
                                                       (OrLaterVersion `mkVersion [4,10]`)
                                                       (EarlierVersion `mkVersion [4,11]`))
-                                                   (Set.fromList [LMainLibName]),
+                                                   (Set.fromList [LMainLibName])
+                                                   DependencySyntaxUnqualified,
                                                  Dependency
                                                    `PackageName "containers"`
                                                    AnyVersion
-                                                   (Set.fromList [LMainLibName]),
+                                                   (Set.fromList [LMainLibName])
+                                                   DependencySyntaxUnqualified,
                                                  Dependency
                                                    `PackageName "HUnit"`
                                                    AnyVersion
-                                                   (Set.fromList [LMainLibName])],
+                                                   (Set.fromList [LMainLibName])
+                                                   DependencySyntaxUnqualified],
                           condTreeData = TestSuite
                                            {testBuildInfo = BuildInfo
                                                               {asmOptions = [],
@@ -603,17 +626,20 @@ GenericPackageDescription
                                                                                           (EarlierVersion
                                                                                              `mkVersion [4,11]`))
                                                                                        (Set.fromList
-                                                                                          [LMainLibName]),
+                                                                                          [LMainLibName])
+                                                                                       DependencySyntaxUnqualified,
                                                                                      Dependency
                                                                                        `PackageName "containers"`
                                                                                        AnyVersion
                                                                                        (Set.fromList
-                                                                                          [LMainLibName]),
+                                                                                          [LMainLibName])
+                                                                                       DependencySyntaxUnqualified,
                                                                                      Dependency
                                                                                        `PackageName "HUnit"`
                                                                                        AnyVersion
                                                                                        (Set.fromList
-                                                                                          [LMainLibName])],
+                                                                                          [LMainLibName])
+                                                                                       DependencySyntaxUnqualified],
                                                                virtualModules = []},
                                             testInterface = TestSuiteExeV10
                                                               `mkVersion [1,0]` "Tests.hs",

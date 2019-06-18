@@ -13,7 +13,8 @@ GenericPackageDescription
                                                                                               `PackageName "unix"`
                                                                                               AnyVersion
                                                                                               (Set.fromList
-                                                                                                 [LMainLibName])],
+                                                                                                 [LMainLibName])
+                                                                                              DependencySyntaxUnqualified],
                                                                      condTreeData = Library
                                                                                       {exposedModules = [],
                                                                                        libBuildInfo = BuildInfo
@@ -70,7 +71,8 @@ GenericPackageDescription
                                                                                                                                  `PackageName "unix"`
                                                                                                                                  AnyVersion
                                                                                                                                  (Set.fromList
-                                                                                                                                    [LMainLibName])],
+                                                                                                                                    [LMainLibName])
+                                                                                                                                 DependencySyntaxUnqualified],
                                                                                                          virtualModules = []},
                                                                                        libExposed = True,
                                                                                        libName = LMainLibName,

@@ -8,27 +8,33 @@ GenericPackageDescription
                       condTreeConstraints = [Dependency
                                                `PackageName "base"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "containers"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "deepseq"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "transformers"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "filepath"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName]),
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified,
                                              Dependency
                                                `PackageName "directory"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName])],
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified],
                       condTreeData = Library
                                        {exposedModules = [`ModuleName ["LeadingComma"]`,
                                                           `ModuleName ["LeadingComma2"]`,
@@ -84,32 +90,38 @@ GenericPackageDescription
                                                                                   `PackageName "base"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "containers"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "deepseq"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "transformers"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "filepath"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName]),
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified,
                                                                                 Dependency
                                                                                   `PackageName "directory"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName])],
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified],
                                                           virtualModules = []},
                                         libExposed = True,
                                         libName = LMainLibName,

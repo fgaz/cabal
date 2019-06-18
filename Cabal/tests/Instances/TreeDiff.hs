@@ -19,7 +19,7 @@ import Distribution.Backpack                  (OpenModule, OpenUnitId)
 import Distribution.Compiler                  (CompilerFlavor, PerCompilerFlavor)
 import Distribution.InstalledPackageInfo      (AbiDependency, ExposedModule, InstalledPackageInfo)
 import Distribution.ModuleName                (ModuleName)
-import Distribution.Package                   (Dependency, PackageIdentifier, PackageName)
+import Distribution.Package                   (Dependency, DependencySyntax, PackageIdentifier, PackageName)
 import Distribution.PackageDescription
 import Distribution.Types.AbiHash             (AbiHash)
 import Distribution.Types.ComponentId         (ComponentId)
@@ -58,6 +58,7 @@ instance ToExpr CompilerFlavor
 instance ToExpr ComponentId where toExpr = defaultExprViaShow
 instance ToExpr DefUnitId
 instance ToExpr Dependency
+instance ToExpr DependencySyntax
 instance ToExpr ExeDependency where toExpr = defaultExprViaShow
 instance ToExpr Executable
 instance ToExpr ExecutableScope where toExpr = defaultExprViaShow

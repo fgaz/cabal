@@ -163,13 +163,14 @@ instance Text D.UnitId where
 instance Text D.Dependency where
   parse = do name <- parse
              Parse.skipSpaces
-             libs <- Parse.option [D.LMainLibName]
-                   $ (Parse.char ':' *>)
-                   $ pure <$> parseLib name <|> parseMultipleLibs name
+             (libs, syntax) <- Parse.option ([D.LMainLibName], D.DependencySyntaxUnqualified) $
+               fmap (\ls -> (ls, D.DependencySyntaxQualified)) $
+               (Parse.char ':' *>) $
+               pure <$> parseLib name <|> parseMultipleLibs name
              Parse.skipSpaces
              ver <- parse Parse.<++ return D.anyVersion
              Parse.skipSpaces
-             return $ D.Dependency name ver $ Set.fromList libs
+             return $ D.Dependency name ver (Set.fromList libs) syntax
     where makeLib pn ln | D.unPackageName pn == ln = D.LMainLibName
                         | otherwise = D.LSubLibName $ D.mkUnqualComponentName ln
           parseLib pn = makeLib pn <$> parsecUnqualComponentName

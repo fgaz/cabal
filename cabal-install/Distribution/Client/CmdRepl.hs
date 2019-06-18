@@ -69,7 +69,7 @@ import Distribution.Types.ComponentName
 import Distribution.Types.CondTree
          ( CondTree(..), traverseCondTreeC )
 import Distribution.Types.Dependency
-         ( Dependency(..) )
+         ( Dependency(..), DependencySyntax(..) )
 import Distribution.Types.GenericPackageDescription
          ( emptyGenericPackageDescription )
 import Distribution.Types.LibraryName
@@ -373,7 +373,7 @@ withoutProject config verbosity extraArgs = do
       { targetBuildDepends = [baseDep]
       , defaultLanguage = Just Haskell2010
       }
-    baseDep = Dependency "base" anyVersion (Set.singleton LMainLibName)
+    baseDep = Dependency "base" anyVersion (Set.singleton LMainLibName) DependencySyntaxQualified
     pkgId = fakePackageId
 
   writeGenericPackageDescription (tempDir </> "fake-package.cabal") genericPackageDescription

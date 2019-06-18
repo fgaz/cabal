@@ -8,7 +8,8 @@ GenericPackageDescription
                       condTreeConstraints = [Dependency
                                                `PackageName "base"`
                                                AnyVersion
-                                               (Set.fromList [LMainLibName])],
+                                               (Set.fromList [LMainLibName])
+                                               DependencySyntaxUnqualified],
                       condTreeData = Library
                                        {exposedModules = [`ModuleName ["ElseIf"]`],
                                         libBuildInfo = BuildInfo
@@ -57,7 +58,8 @@ GenericPackageDescription
                                                                                   `PackageName "base"`
                                                                                   AnyVersion
                                                                                   (Set.fromList
-                                                                                     [LMainLibName])],
+                                                                                     [LMainLibName])
+                                                                                  DependencySyntaxUnqualified],
                                                           virtualModules = []},
                                         libExposed = True,
                                         libName = LMainLibName,

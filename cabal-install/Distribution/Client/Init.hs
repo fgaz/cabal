@@ -648,7 +648,7 @@ chooseDep flags (m, Just ps)
     toDep :: [P.PackageIdentifier] -> IO P.Dependency
 
     -- If only one version, easy.  We change e.g. 0.4.2  into  0.4.*
-    toDep [pid] = return $ P.Dependency (P.pkgName pid) (pvpize desugar . P.pkgVersion $ pid) (Set.singleton LMainLibName) --TODO sublibraries
+    toDep [pid] = return $ P.Dependency (P.pkgName pid) (pvpize desugar . P.pkgVersion $ pid) (Set.singleton LMainLibName) P.DependencySyntaxQualified --TODO sublibraries
 
     -- Otherwise, choose the latest version and issue a warning.
     toDep pids  = do
@@ -656,6 +656,7 @@ chooseDep flags (m, Just ps)
       return $ P.Dependency (P.pkgName . head $ pids)
                             (pvpize desugar . maximum . map P.pkgVersion $ pids)
                             (Set.singleton LMainLibName) --TODO take into account sublibraries
+                            P.DependencySyntaxQualified
 
 -- | Given a version, return an API-compatible (according to PVP) version range.
 --

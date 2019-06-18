@@ -482,8 +482,8 @@ relaxPackageDeps _ rd gpd | not (isRelaxDeps rd) = gpd -- subsumed by no-op case
 relaxPackageDeps relKind RelaxDepsAll  gpd = PD.transformAllBuildDepends relaxAll gpd
   where
     relaxAll :: Dependency -> Dependency
-    relaxAll (Dependency pkgName verRange cs) =
-        Dependency pkgName (removeBound relKind RelaxDepModNone verRange) cs
+    relaxAll (Dependency pkgName verRange cs syn) =
+        Dependency pkgName (removeBound relKind RelaxDepModNone verRange) cs syn
 
 relaxPackageDeps relKind (RelaxDepsSome depsToRelax0) gpd =
   PD.transformAllBuildDepends relaxSome gpd
@@ -503,13 +503,13 @@ relaxPackageDeps relKind (RelaxDepsSome depsToRelax0) gpd =
           | otherwise         -> Nothing
 
     relaxSome :: Dependency -> Dependency
-    relaxSome d@(Dependency depName verRange cs)
+    relaxSome d@(Dependency depName verRange cs syn)
         | Just relMod <- Map.lookup RelaxDepSubjectAll depsToRelax =
             -- a '*'-subject acts absorbing, for consistency with
             -- the 'Semigroup RelaxDeps' instance
-            Dependency depName (removeBound relKind relMod verRange) cs
+            Dependency depName (removeBound relKind relMod verRange) cs syn
         | Just relMod <- Map.lookup (RelaxDepSubjectPkg depName) depsToRelax =
-            Dependency depName (removeBound relKind relMod verRange) cs
+            Dependency depName (removeBound relKind relMod verRange) cs syn
         | otherwise = d -- no-op
 
 -- | Internal helper for 'relaxPackageDeps'
@@ -655,7 +655,9 @@ standardInstallPolicy installedPkgIndex sourcePkgDb pkgSpecifiers
       mkDefaultSetupDeps :: UnresolvedSourcePackage -> Maybe [Dependency]
       mkDefaultSetupDeps srcpkg | affected        =
         Just [Dependency (mkPackageName "Cabal")
-              (orLaterVersion $ mkVersion [1,24]) (Set.singleton PD.LMainLibName)]
+              (orLaterVersion $ mkVersion [1,24])
+              (Set.singleton PD.LMainLibName)
+              DependencySyntaxQualified]
                                 | otherwise       = Nothing
         where
           gpkgdesc = packageDescription srcpkg
@@ -953,10 +955,8 @@ configuredPackageProblems platform cinfo
 
     packageSatisfiesDependency
       (PackageIdentifier name  version)
-      (Dependency        name' versionRange _) = assert (name == name') $
+      (Dependency        name' versionRange _ _) = assert (name == name') $
         version `withinRange` versionRange
-
-    dependencyName (Dependency name _ _) = name
 
     mergedDeps :: [MergeResult Dependency PackageId]
     mergedDeps = mergeDeps requiredDeps (CD.flatDeps specifiedDeps)
@@ -966,8 +966,8 @@ configuredPackageProblems platform cinfo
     mergeDeps required specified =
       let sortNubOn f = nubBy ((==) `on` f) . sortBy (compare `on` f) in
       mergeBy
-        (\dep pkgid -> dependencyName dep `compare` packageName pkgid)
-        (sortNubOn dependencyName required)
+        (\dep pkgid -> depPkgName dep `compare` packageName pkgid)
+        (sortNubOn depPkgName required)
         (sortNubOn packageName    specified)
 
     compSpec = enableStanzas stanzas

@@ -168,10 +168,12 @@ toConfiguredComponent pkg_descr this_cid lib_dep_map exe_dep_map component = do
     lib_deps <-
         if newPackageDepsBehaviour pkg_descr
             then fmap concat $ forM (targetBuildDepends bi) $
-                 \(Dependency name _ sublibs) -> do
+                 \(Dependency name _ sublibs syntax) -> do
                     -- The package name still needs fixing in case of legacy
                     -- sublibrary dependency syntax
-                    let (pn, _) = fixFakePkgName pkg_descr name
+                    let pn = case syntax of
+                               DependencySyntaxUnqualified -> fst $ fixFakePkgName pkg_descr name
+                               DependencySyntaxQualified   -> name
                     pkg <- case Map.lookup pn lib_dep_map of
                         Nothing ->
                             dieProgress $
