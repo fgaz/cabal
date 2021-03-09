@@ -136,6 +136,7 @@ data ProjectConfigBuildOnly
        projectConfigVerbosity             :: Flag Verbosity,
        projectConfigDryRun                :: Flag Bool,
        projectConfigOnlyDeps              :: Flag Bool,
+       projectConfigDownloadOnly          :: Flag Bool,
        projectConfigSummaryFile           :: NubList PathTemplate,
        projectConfigLogFile               :: Flag PathTemplate,
        projectConfigBuildReports          :: Flag ReportLevel,
@@ -436,6 +437,7 @@ data BuildTimeSettings
    = BuildTimeSettings {
        buildSettingDryRun                :: Bool,
        buildSettingOnlyDeps              :: Bool,
+       buildSettingDownloadOnly          :: Bool,
        buildSettingSummaryFile           :: [PathTemplate],
        buildSettingLogFile               :: Maybe (Compiler  -> Platform
                                                 -> PackageId -> UnitId

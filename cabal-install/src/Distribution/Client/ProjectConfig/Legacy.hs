@@ -509,6 +509,7 @@ convertLegacyBuildOnlyFlags globalFlags configFlags
 
     InstallFlags {
       installDryRun             = projectConfigDryRun,
+      installDownloadOnly       = projectConfigDownloadOnly,
       installOnly               = _,
       installOnlyDeps           = projectConfigOnlyDeps,
       installRootCmd            = _,
@@ -612,6 +613,7 @@ convertToLegacySharedConfig
       installHaddockIndex      = projectConfigHaddockIndex,
       installDest              = Flag NoCopyDest,
       installDryRun            = projectConfigDryRun,
+      installDownloadOnly      = projectConfigDownloadOnly,
       installReinstall         = mempty, --projectConfigReinstall,
       installAvoidReinstalls   = mempty, --projectConfigAvoidReinstalls,
       installOverrideReinstall = mempty, --projectConfigOverrideReinstall,

@@ -303,6 +303,7 @@ resolveBuildTimeSettings verbosity
   where
     buildSettingDryRun        = fromFlag    projectConfigDryRun
     buildSettingOnlyDeps      = fromFlag    projectConfigOnlyDeps
+    buildSettingDownloadOnly  = fromFlag    projectConfigDownloadOnly
     buildSettingSummaryFile   = fromNubList projectConfigSummaryFile
     --buildSettingLogFile       -- defined below, more complicated
     --buildSettingLogVerbosity  -- defined below, more complicated
@@ -328,6 +329,7 @@ resolveBuildTimeSettings verbosity
     defaults = mempty {
       projectConfigDryRun                = toFlag False,
       projectConfigOnlyDeps              = toFlag False,
+      projectConfigDownloadOnly          = toFlag False,
       projectConfigBuildReports          = toFlag NoReports,
       projectConfigReportPlanningFailure = toFlag False,
       projectConfigKeepGoing             = toFlag False,
