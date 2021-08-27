@@ -550,17 +550,15 @@ configure (pkg_descr0, pbi) cfg = do
     -- Configure certain external build tools, see below for which ones.
     let requiredBuildTools = do
           bi <- enabledBuildInfos pkg_descr enabled
-          -- First, we collect any tool dep that we know is external. This is,
-          -- in practice:
+          -- First, we collect any tool dep. This is, in practice:
           --
           -- 1. `build-tools` entries on the whitelist
           --
-          -- 2. `build-tool-depends` that aren't from the current package.
+          -- 2. `build-tool-depends`
           let externBuildToolDeps =
                 [ LegacyExeDependency (unUnqualComponentName eName) versionRange
-                | buildTool@(ExeDependency _ eName versionRange)
-                  <- getAllToolDependencies pkg_descr bi
-                , not $ isInternal pkg_descr buildTool ]
+                | ExeDependency _ eName versionRange
+                  <- getAllToolDependencies pkg_descr bi ]
           -- Second, we collect any build-tools entry we don't know how to
           -- desugar. We'll never have any idea how to build them, so we just
           -- hope they are already on the PATH.
